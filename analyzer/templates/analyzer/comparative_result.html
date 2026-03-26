@@ -1,0 +1,297 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Comparison Report | Eco Gap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; transition: background 0.3s ease, color 0.3s ease; }
+        
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .card-glass { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        .nav-pills .nav-link { color: var(--text-muted); font-weight: 600; border-radius: 8px; padding: 14px 20px; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; }
+        .nav-pills .nav-link:hover { background: var(--bg-card); color: var(--text-main); }
+        .nav-pills .nav-link.active { background: rgba(25, 135, 84, 0.15); color: #198754; border-left: 4px solid #198754; border-radius: 0 8px 8px 0; }
+        
+        .table-custom { --bs-table-bg: transparent; --bs-table-color: var(--text-main); margin-bottom: 0; }
+        .table-custom th { border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px; }
+        .table-custom td { border-bottom: 1px solid var(--border-color); padding: 16px; vertical-align: middle; }
+        .table-custom tbody tr:hover td { background: var(--bg-card) !important; }
+        
+        .summary-box { background: rgba(128,128,128,0.1); border-left: 4px solid #0dcaf0; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-size: 0.95rem; color: var(--text-main); }
+        
+        .btn-brand { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 600; }
+        .btn-brand:hover { background: linear-gradient(135deg, #059669, #047857); color: white; }
+
+        /* ================= PAYWALL CSS ================= */
+        .paywall-container { position: relative; max-height: 480px; overflow: hidden; }
+        .paywall-fade { 
+            position: absolute; bottom: 0; left: 0; right: 0; height: 300px; 
+            background: linear-gradient(to bottom, transparent 0%, var(--bg-main) 100%); 
+            z-index: 5; pointer-events: none; 
+        }
+        .paywall-action { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; width: 100%; }
+
+        /* =========================================================
+           PRINT STYLES
+           ========================================================= */
+        @media print {
+            @page { margin: 1cm; size: landscape; } 
+            body { background: white !important; color: black !important; }
+            .topbar, .d-print-none, .nav-pills { display: none !important; }
+            .card-glass { background: white !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important; page-break-inside: avoid; margin-bottom: 30px; }
+            .text-theme-main, .text-theme-muted, .text-white, .text-white-50 { color: black !important; }
+            .summary-box { background: #f8f9fa !important; color: #212529 !important; border-left: 4px solid #000 !important; }
+            .table-custom th { color: black !important; border-bottom: 2px solid #000 !important; }
+            .table-custom td { border-bottom: 1px solid #ddd !important; }
+            .badge { border: 1px solid #000 !important; color: black !important; }
+            .col-md-3 { display: none !important; }
+            .col-md-9 { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; }
+            .tab-content > .tab-pane { display: block !important; opacity: 1 !important; visibility: visible !important; page-break-before: always; }
+            .tab-content > .tab-pane:first-child { page-break-before: auto; }
+            .paywall-fade, .paywall-action { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4 d-print-none">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+            
+            <button class="theme-toggle" id="themeToggleBtn">
+                <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+            </button>
+
+            <a href="{% url 'profile' %}" class="text-decoration-none">
+                <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                    {{ user.username|slice:":2"|upper|default:"AD" }}
+                </div>
+            </a>
+
+            <form action="{% url 'logout' %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container-fluid px-4 px-lg-5 mb-5">
+    <div class="mb-4 border-bottom border-theme pb-3 d-flex justify-content-between align-items-end">
+        <div>
+            {% if is_cross_compare %}
+                <h2 class="fw-bold mb-1 text-dark-print text-theme-main"><i class="fa-solid fa-scale-balanced text-info me-2 d-print-none"></i> Peer Benchmarking</h2>
+                <p class="text-theme-muted mb-0">Doc 1: <span class="text-theme-main">{{ comp_report.base_report.document.name|slice:"11:" }}</span> vs Doc 2: <span class="text-theme-main">{{ comp_report.new_report.document.name|slice:"11:" }}</span></p>
+            {% else %}
+                <h2 class="fw-bold mb-1 text-dark-print text-theme-main"><i class="fa-solid fa-timeline text-success me-2 d-print-none"></i> YoY Delta Assessment</h2>
+                <p class="text-theme-muted mb-0">Base Year: <span class="text-theme-main">{{ comp_report.base_report.document.name|slice:"11:" }}</span> vs New Year: <span class="text-theme-main">{{ comp_report.new_report.document.name|slice:"11:" }}</span></p>
+            {% endif %}
+        </div>
+        
+        <!-- EXPORT BUTTON LOCK -->
+        {% if is_premium %}
+            <a href="{% url 'export_comparative_pdf' comp_report.id %}" target="_blank" class="btn btn-outline-secondary border-theme text-theme-main rounded-pill px-4 fw-bold d-print-none">
+                <i class="fa-solid fa-file-pdf text-danger me-2"></i> Export PDF Report
+            </a>
+        {% else %}
+            <a href="{% url 'pricing' %}" class="btn btn-outline-warning border-warning text-warning rounded-pill px-4 fw-bold d-print-none">
+                <i class="fa-solid fa-lock me-2"></i> Unlock Export
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="card-glass mb-4">
+        <h5 class="fw-bold text-theme-main mb-3 text-dark-print"><i class="fa-solid fa-chart-line text-info me-2 d-print-none"></i> AI Executive Summary</h5>
+        <div class="summary-box">{{ comp_report.executive_summary }}</div>
+    </div>
+
+    {% regroup comp_report.findings.all by framework as framework_list %}
+
+    <div class="row g-4">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3">
+            <div class="card-glass p-2">
+                <div class="text-theme-muted small fw-bold text-uppercase px-3 mb-3 mt-2" style="letter-spacing: 1px;">Frameworks</div>
+                <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    {% for framework in framework_list %}
+                    <button class="nav-link text-start {% if forloop.first %}active{% endif %} mb-2" id="v-pills-{{ framework.grouper|slugify }}-tab" data-bs-toggle="pill" data-bs-target="#v-pills-{{ framework.grouper|slugify }}" type="button" role="tab">
+                        <i class="fa-solid fa-folder-open me-2"></i> {{ framework.grouper }} Analysis
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                {% for framework in framework_list %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="v-pills-{{ framework.grouper|slugify }}" role="tabpanel">
+                    
+                    <div class="card-glass p-0 overflow-hidden">
+                        <div class="d-flex justify-content-between align-items-center p-4 border-bottom border-theme">
+                            <h5 class="text-theme-main fw-bold mb-0 text-dark-print">{{ framework.grouper }} Detail View</h5>
+                        </div>
+
+                        <!-- TABLE PAYWALL CONTAINER -->
+                        {% if not is_premium and framework.list|length > 4 %}
+                            <div class="paywall-container">
+                        {% else %}
+                            <div class="table-responsive">
+                        {% endif %}
+
+                            <table class="table table-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 25%;">Requirement / Theme</th>
+                                        <!-- Dynamic Headers -->
+                                        {% if is_cross_compare %}
+                                            <th style="width: 15%;">Doc 1 Status</th>
+                                            <th style="width: 15%;">Doc 2 Status</th>
+                                            <th style="width: 15%;">Leadership</th>
+                                        {% else %}
+                                            <th style="width: 15%;">Base Status</th>
+                                            <th style="width: 15%;">New Status</th>
+                                            <th style="width: 15%;">YoY Trend</th>
+                                        {% endif %}
+                                        <th style="width: 30%;">AI Analysis</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for finding in framework.list %}
+                                    <tr>
+                                        <td class="fw-medium text-theme-main">{{ finding.requirement }}</td>
+                                        <td class="text-theme-muted small">{{ finding.base_status }}</td>
+                                        <td class="text-theme-muted small">{{ finding.new_status }}</td>
+                                        <td>
+                                            <!-- YoY Badges -->
+                                            {% if finding.trend == 'Improved' %}
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-2"><i class="fa-solid fa-arrow-trend-up me-1 d-print-none"></i> Improved</span>
+                                            {% elif finding.trend == 'Regressed' %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-2"><i class="fa-solid fa-arrow-trend-down me-1 d-print-none"></i> Regressed</span>
+                                            
+                                            <!-- Cross-Company Badges -->
+                                            {% elif finding.trend == 'Document 1 Leads' %}
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3 py-2"><i class="fa-solid fa-trophy me-1 d-print-none"></i> Doc 1 Leads</span>
+                                            {% elif finding.trend == 'Document 2 Leads' %}
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill px-3 py-2"><i class="fa-solid fa-trophy me-1 d-print-none"></i> Doc 2 Leads</span>
+                                            {% elif finding.trend == 'Parity' %}
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-2"><i class="fa-solid fa-equals me-1 d-print-none"></i> Parity</span>
+                                            
+                                            <!-- Universal Badges -->
+                                            {% elif finding.trend == 'New Gap' or finding.trend == 'Mutual Gap' %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-2"><i class="fa-solid fa-circle-exclamation me-1 d-print-none"></i> {{ finding.trend }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3 py-2"><i class="fa-solid fa-minus me-1 d-print-none"></i> {{ finding.trend }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-theme-muted small">{{ finding.ai_analysis }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center text-theme-muted py-4">No comparative data found.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            
+                        <!-- CLOSING THE PAYWALL CONTAINER AND ADDING THE LOCK OVERLAY -->
+                        {% if not is_premium and framework.list|length > 4 %}
+                                <div class="paywall-fade"></div>
+                                <div class="paywall-action">
+                                    <i class="fa-solid fa-lock text-warning fs-3 mb-2"></i>
+                                    <h5 class="text-theme-main fw-bold mb-3">Premium Content Hidden</h5>
+                                    <a href="{% url 'pricing' %}" class="btn btn-brand rounded-pill px-4 shadow-lg">Upgrade to View Full Comparison</a>
+                                </div>
+                            </div> <!-- End .paywall-container -->
+                        {% else %}
+                            </div> <!-- End .table-responsive -->
+                        {% endif %}
+                        
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

@@ -1,0 +1,355 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>XBRL Diagnostic Results | ECO GAP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --accordion-bg: rgba(255,255,255,0.03);
+            --tag-bg: rgba(255,255,255,0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --accordion-bg: #f1f5f9;
+            --tag-bg: rgba(0,0,0,0.05);
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s ease, color 0.3s ease; }
+        
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .card-glass { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 24px; }
+        
+        .score-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; margin: 0 auto; border: 8px solid; }
+        .score-high { border-color: #198754; color: #198754; }
+        .score-medium { border-color: #ffc107; color: #ffc107; }
+        .score-low { border-color: #dc3545; color: #dc3545; }
+
+        .stat-box { background: rgba(128,128,128,0.1); border-left: 4px solid; padding: 15px; border-radius: 8px; }
+        .stat-expected { border-color: #0dcaf0; }
+        .stat-missing { border-color: #dc3545; }
+        .stat-custom { border-color: #ffc107; }
+
+        .explainer-text { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
+        
+        .accordion-button { background: var(--accordion-bg); color: var(--text-main); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 8px !important; margin-bottom: 8px; }
+        .accordion-button:not(.collapsed) { background: rgba(25, 135, 84, 0.1); color: #198754; box-shadow: none; border: 1px solid rgba(25, 135, 84, 0.3); }
+        .accordion-button:focus { box-shadow: none; }
+        .accordion-item { background: transparent; border: none; }
+
+        .tag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+        .tag-badge { background: var(--tag-bg); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 0.85rem; word-break: break-all; }
+        
+        /* ================= PAYWALL CSS ================= */
+        .btn-brand { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 600; padding: 10px 24px; border-radius: 50px;}
+        .btn-brand:hover { background: linear-gradient(135deg, #059669, #047857); color: white; }
+        
+        .paywall-container { position: relative; max-height: 280px; overflow: hidden; }
+        .paywall-fade { 
+            position: absolute; bottom: 0; left: 0; right: 0; height: 160px; 
+            background: linear-gradient(to bottom, transparent 0%, var(--bg-main) 100%); 
+            z-index: 5; pointer-events: none; 
+        }
+        .paywall-action { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+            
+            <button class="theme-toggle" id="themeToggleBtn">
+                <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+            </button>
+
+            <a href="{% url 'profile' %}" class="text-decoration-none">
+                <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                    {{ user.username|slice:":2"|upper|default:"AD" }}
+                </div>
+            </a>
+
+            <form action="{% url 'logout' %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container mt-2 mb-5 flex-grow-1">
+    
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-theme-main">Digital Taxonomy Report</h2>
+            <p class="text-theme-muted mb-0">Analyzed against the official <strong class="text-theme-main">{{ job.reference_standard }}</strong> digital dictionary.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <!-- EXPORT BUTTON LOCK -->
+            {% if is_premium %}
+                <a href="{% url 'xbrl_export_pdf' job.id %}" target="_blank" class="btn btn-outline-info rounded-pill fw-bold shadow-sm">
+                    <i class="fa-solid fa-file-pdf me-2"></i> Preview PDF
+                </a>
+                <a href="{% url 'xbrl_export_csv' job.id %}" class="btn btn-outline-success rounded-pill fw-bold shadow-sm">
+                    <i class="fa-solid fa-file-csv me-2"></i> Export CSV
+                </a>
+            {% else %}
+                <a href="{% url 'pricing' %}" class="btn btn-outline-warning border-warning text-warning rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="fa-solid fa-lock me-2"></i> Unlock Export
+                </a>
+            {% endif %}
+            
+            <a href="{% url 'xbrl_upload' %}" class="btn btn-outline-secondary text-theme-main border-theme rounded-pill">
+                <i class="fa-solid fa-rotate-left me-2"></i> New Scan
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card-glass text-center h-100 d-flex flex-column justify-content-center">
+                <h6 class="text-theme-muted text-uppercase fw-bold mb-4" style="letter-spacing: 1px;">Overall Compliance</h6>
+                <div class="score-circle {% if job.compliance_score >= 80 %}score-high{% elif job.compliance_score >= 50 %}score-medium{% else %}score-low{% endif %} mb-3">
+                    {{ job.compliance_score }}%
+                </div>
+                <p class="explainer-text mb-0 mt-3 px-2">
+                    {% if job.compliance_score >= 80 %}
+                        Excellent! Your digital tags closely align with the {{ job.reference_standard }} requirements. This ensures machines and regulators can read your data perfectly.
+                    {% elif job.compliance_score >= 50 %}
+                        Needs Improvement. You have many correct tags, but significant required disclosures are missing machine-readable identifiers.
+                    {% else %}
+                        High Risk. Your document lacks the necessary digital tags to be considered compliant. Regulators or parsing engines will reject this format.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card-glass h-100">
+                <h5 class="fw-bold text-theme-main mb-3 border-bottom border-theme pb-3">What Does This Mean?</h5>
+                <p class="explainer-text mb-4">
+                    XBRL (eXtensible Business Reporting Language) is the global standard for exchanging business information. Instead of treating your report like a flat PDF, XBRL attaches "digital barcode tags" to every specific metric (like emissions or revenue) so computers can instantly understand it. <br><br>
+                    This diagnostic checked the tags in your document against the complete dictionary of tags required by the <strong class="text-theme-main">{{ job.reference_standard }}</strong> framework. Here is what we found:
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="stat-box stat-expected">
+                            <h6 class="text-theme-muted mb-1 small text-uppercase">Total Expected</h6>
+                            <h3 class="text-info fw-bold mb-0">{{ summary.total_expected }}</h3>
+                            <small class="text-theme-muted">Tags the framework requires.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-box stat-missing">
+                            <h6 class="text-theme-muted mb-1 small text-uppercase">Missing Tags</h6>
+                            <h3 class="text-danger fw-bold mb-0">{{ summary.missing_count }}</h3>
+                            <small class="text-theme-muted">Required tags not found.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-box stat-custom">
+                            <h6 class="text-theme-muted mb-1 small text-uppercase">Custom/Unrecognized</h6>
+                            <h3 class="text-warning fw-bold mb-0">{{ summary.unrecognized_count }}</h3>
+                            <small class="text-theme-muted">Tags not in the dictionary.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="position-relative">
+        <div class="accordion accordion-flush" id="xbrlAccordion">
+            
+            <!-- MISSING TAGS -->
+            <div class="accordion-item card-glass p-0 mb-3 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button m-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMissing">
+                        <i class="fa-solid fa-circle-xmark text-danger me-3"></i> Missing Required Elements ({{ summary.missing_count }})
+                    </button>
+                </h2>
+                <div id="collapseMissing" class="accordion-collapse collapse show" data-bs-parent="#xbrlAccordion">
+                    <div class="accordion-body p-4 border-top border-theme">
+                        <p class="explainer-text mb-4">
+                            <strong>Action Required:</strong> The following concepts are required by the {{ job.reference_standard }} taxonomy, but we could not find their corresponding digital tags in your document. Your XBRL generation software needs to map these data points.
+                        </p>
+                        
+                        <!-- PAYWALL WRAPPER -->
+                        <div class="{% if not is_premium and missing|length > 6 %}paywall-container{% endif %}">
+                            <div class="tag-grid">
+                                {% for tag in missing %}
+                                    <div class="tag-badge text-danger border-danger border-opacity-50"><i class="fa-solid fa-tag me-2 opacity-50"></i>{{ tag }}</div>
+                                {% empty %}
+                                    <div class="text-success fw-bold w-100 text-center py-3">Perfect! No required tags are missing.</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- PAYWALL OVERLAY -->
+                            {% if not is_premium and missing|length > 6 %}
+                                <div class="paywall-fade"></div>
+                                <div class="paywall-action">
+                                    <i class="fa-solid fa-lock text-warning fs-3 mb-2"></i>
+                                    <h6 class="text-theme-main fw-bold mb-3">Premium Content Hidden</h6>
+                                    <a href="{% url 'pricing' %}" class="btn btn-brand shadow-lg">Upgrade to View All</a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- UNRECOGNIZED TAGS -->
+            <div class="accordion-item card-glass p-0 mb-3 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed m-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustom">
+                        <i class="fa-solid fa-triangle-exclamation text-warning me-3"></i> Unrecognized / Custom Extensions ({{ summary.unrecognized_count }})
+                    </button>
+                </h2>
+                <div id="collapseCustom" class="accordion-collapse collapse" data-bs-parent="#xbrlAccordion">
+                    <div class="accordion-body p-4 border-top border-theme">
+                        <p class="explainer-text mb-4">
+                            <strong>Review Recommended:</strong> These tags were found in your document, but they do not exist in the official {{ job.reference_standard }} dictionary. They might be custom extensions your company created, or they could be typos.
+                        </p>
+
+                        <!-- PAYWALL WRAPPER -->
+                        <div class="{% if not is_premium and unrecognized|length > 6 %}paywall-container{% endif %}">
+                            <div class="tag-grid">
+                                {% for tag in unrecognized %}
+                                    <div class="tag-badge text-warning border-warning border-opacity-50"><i class="fa-solid fa-tag me-2 opacity-50"></i>{{ tag }}</div>
+                                {% empty %}
+                                    <div class="text-theme-muted w-100 text-center py-3">No custom extensions found.</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- PAYWALL OVERLAY -->
+                            {% if not is_premium and unrecognized|length > 6 %}
+                                <div class="paywall-fade"></div>
+                                <div class="paywall-action">
+                                    <i class="fa-solid fa-lock text-warning fs-3 mb-2"></i>
+                                    <h6 class="text-theme-main fw-bold mb-3">Premium Content Hidden</h6>
+                                    <a href="{% url 'pricing' %}" class="btn btn-brand shadow-lg">Upgrade to View All</a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- MATCHED TAGS -->
+            <div class="accordion-item card-glass p-0 mb-3 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed m-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMatched">
+                        <i class="fa-solid fa-circle-check text-success me-3"></i> Successfully Matched Elements ({{ summary.matched_count }})
+                    </button>
+                </h2>
+                <div id="collapseMatched" class="accordion-collapse collapse" data-bs-parent="#xbrlAccordion">
+                    <div class="accordion-body p-4 border-top border-theme">
+                        <p class="explainer-text mb-4">
+                            <strong>Validated:</strong> These tags were successfully identified in your document and perfectly match the {{ job.reference_standard }} taxonomy.
+                        </p>
+
+                        <!-- PAYWALL WRAPPER -->
+                        <div class="{% if not is_premium and matched|length > 6 %}paywall-container{% endif %}">
+                            <div class="tag-grid">
+                                {% for tag in matched|slice:":100" %}
+                                    <div class="tag-badge text-success border-success border-opacity-50"><i class="fa-solid fa-check me-2 opacity-50"></i>{{ tag }}</div>
+                                {% empty %}
+                                    <div class="text-theme-muted w-100 text-center py-3">No matches found.</div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- PAYWALL OVERLAY -->
+                            {% if not is_premium and matched|length > 6 %}
+                                <div class="paywall-fade"></div>
+                                <div class="paywall-action">
+                                    <i class="fa-solid fa-lock text-warning fs-3 mb-2"></i>
+                                    <h6 class="text-theme-main fw-bold mb-3">Premium Content Hidden</h6>
+                                    <a href="{% url 'pricing' %}" class="btn btn-brand shadow-lg">Upgrade to View All</a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

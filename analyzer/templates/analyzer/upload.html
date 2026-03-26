@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Report | ECO GAP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            transition: background 0.3s ease, color 0.3s ease; 
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .upload-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 50px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .form-control { background: rgba(128,128,128,0.1) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+        .form-control:focus { box-shadow: none; border-color: #198754 !important; }
+
+        .btn-brand { background: #198754; color: white; border: none; transition: all 0.3s ease; }
+        .btn-brand:hover { background: #146c43; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(25, 135, 84, 0.2); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+            
+            <button class="theme-toggle" id="themeToggleBtn">
+                <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+            </button>
+
+            <a href="{% url 'profile' %}" class="text-decoration-none">
+                <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                    {{ user.username|slice:":2"|upper|default:"AD" }}
+                </div>
+            </a>
+
+            <form action="{% url 'logout' %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+    <div class="upload-card text-center">
+        <div class="mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 80px; height: 80px;">
+                <i class="fa-solid fa-cloud-arrow-up fa-2x"></i>
+            </div>
+            <h2 class="fw-bold text-theme-main">Gap Analysis</h2>
+            <p class="text-theme-muted">Upload a sustainability report (PDF) to initiate the 6-layer proprietary compliance audit for GRI and IFRS standards.</p>
+        </div>
+
+        <form action="{% url 'upload_document' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-4 text-start">
+                <label class="form-label text-theme-muted fw-bold small text-uppercase" style="letter-spacing: 0.5px;">Select Document</label>
+                <input type="file" name="document" class="form-control form-control-lg" accept=".pdf" required>
+            </div>
+
+            <button type="submit" class="btn btn-brand btn-lg w-100 rounded-pill fw-bold" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin me-2\'></i>Running Audit Pipeline...';">
+                <i class="fa-solid fa-microchip me-2"></i> Start Analysis
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

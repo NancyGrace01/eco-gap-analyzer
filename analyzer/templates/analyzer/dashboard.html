@@ -1,0 +1,400 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Workspace | Eco Gap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(20, 25, 35, 0.4);
+            --bg-card-hover: rgba(30, 41, 59, 0.6);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { 
+            background: var(--bg-main);
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; 
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        /* Premium Glassmorphism Cards */
+        .dashboard-card { 
+            background: var(--bg-card); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid var(--border-color); 
+            border-radius: 20px; 
+            padding: 24px; 
+            height: 100%; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Subtle glowing top borders for charts */
+        .border-glow-info { border-top: 3px solid #06b6d4; }
+        .border-glow-warning { border-top: 3px solid #f59e0b; }
+        .border-glow-purple { border-top: 3px solid #8b5cf6; }
+
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-custom { --bs-table-bg: transparent; --bs-table-color: var(--text-main); margin-bottom: 0; }
+        .table-custom th { border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px; }
+        .table-custom td { border-bottom: 1px solid var(--border-color); padding: 16px; vertical-align: middle; }
+        .table-custom tbody tr:hover td { background: var(--bg-card-hover) !important; }
+        
+        .btn-brand { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 600; }
+        .btn-brand:hover { background: linear-gradient(135deg, #059669, #047857); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated and user.profile.company %}
+        <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm d-none d-md-block" data-bs-toggle="modal" data-bs-target="#inviteModal">
+            <i class="fa-solid fa-user-plus me-1"></i> Invite Team
+        </button>
+        {% endif %}
+        
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+
+        <a href="{% url 'profile' %}" class="text-decoration-none">
+            <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                {{ user.username|slice:":2"|upper|default:"AD" }}
+            </div>
+        </a>
+
+        <form action="{% url 'logout' %}" method="post" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if messages %}
+<div class="container-fluid px-4 px-lg-5 mb-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow" role="alert" style="background: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.3); color: #0dcaf0; border-radius: 12px;">
+        <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="container-fluid px-4 px-lg-5 mb-5">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1 text-theme-main">Workspace Overview</h3>
+            <div class="d-flex align-items-center mt-2">
+                <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2">
+                    <i class="fa-solid fa-folder-open me-2"></i> {{ total_scans|default:"0" }} Documents Processed
+                </span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'upload_document' %}" class="btn btn-brand rounded-pill px-4 shadow-lg"><i class="fa-solid fa-file-pdf me-2"></i> New Scan</a>
+            <a href="{% url 'xbrl_upload' %}" class="btn btn-outline-secondary text-theme-main rounded-pill px-4 border-theme"><i class="fa-solid fa-code me-2"></i> New XBRL</a>
+            <a href="{% url 'compare_reports' %}" class="btn btn-outline-info rounded-pill px-4"><i class="fa-solid fa-scale-balanced me-2"></i> Compare Documents</a>
+        </div>
+    </div>
+
+    <!-- The 3-Grid Beautiful Charts Row (Compliance Chart Removed) -->
+    <div class="row g-4 mb-4">
+        
+        <!-- 1. XBRL Match -->
+        <div class="col-lg-4">
+            <div class="dashboard-card border-glow-info">
+                <h6 class="stat-label mb-3">XBRL Match Rates</h6>
+                <div style="height: 180px; position: relative;">
+                    <canvas id="xbrlBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. YoY Delta -->
+        <div class="col-lg-4">
+            <div class="dashboard-card border-glow-warning">
+                <h6 class="stat-label mb-3">Latest YoY Delta</h6>
+                <div style="height: 180px; position: relative;">
+                    <canvas id="yoyDeltaChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Peer Benchmark -->
+        <div class="col-lg-4">
+            <div class="dashboard-card border-glow-purple">
+                <h6 class="stat-label mb-3">Latest Peer Benchmark</h6>
+                <div style="height: 180px; position: relative;">
+                    <canvas id="peerBenchmarkChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Tables Row -->
+    <div class="row g-4">
+        <!-- Recent Scans -->
+        <div class="col-lg-7">
+            <div class="dashboard-card p-0 overflow-hidden">
+                <div class="p-4 border-bottom border-theme d-flex justify-content-between align-items-center" style="background: rgba(0,0,0,0.1);">
+                    <h6 class="stat-label text-theme-main mb-0"><i class="fa-solid fa-robot text-success me-2"></i> Recent AI Scans</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Report Subject</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in ai_reports %}
+                            <tr>
+                                <td class="fw-medium text-theme-main"><i class="fa-regular fa-file-pdf text-danger me-2"></i> {{ report.document.name|slice:"11:"|truncatechars:35 }}</td>
+                                <td class="text-theme-muted">{{ report.created_at|date:"M d, Y" }}</td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1">Complete</span></td>
+                                <td class="text-end"><a href="{% url 'results_preview' report.id %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 border-theme">View</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-theme-muted py-5">No AI scans yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent XBRL -->
+        <div class="col-lg-5">
+            <div class="dashboard-card p-0 overflow-hidden">
+                <div class="p-4 border-bottom border-theme" style="background: rgba(0,0,0,0.1);">
+                    <h6 class="stat-label text-theme-main mb-0"><i class="fa-solid fa-code text-info me-2"></i> Recent XBRL Validations</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Standard</th>
+                                <th>Score</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in xbrl_jobs %}
+                            <tr>
+                                <td><span class="badge bg-theme-card border border-theme text-theme-main">{{ job.reference_standard }}</span></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; background: rgba(128,128,128,0.2);">
+                                            <div class="progress-bar {% if job.compliance_score > 80 %}bg-success{% elif job.compliance_score > 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ job.compliance_score }}%"></div>
+                                        </div>
+                                        <span class="small fw-bold text-theme-main">{{ job.compliance_score }}%</span>
+                                    </div>
+                                </td>
+                                <td class="text-end"><a href="{% url 'xbrl_result' job.id %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 border-theme">View</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-theme-muted py-5">No XBRL validations yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div class="modal fade" id="inviteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-theme-card border-theme" style="border-radius: 16px;">
+            <div class="modal-header border-bottom border-theme">
+                <h5 class="modal-title fw-bold text-theme-main"><i class="fa-solid fa-envelope-open-text text-info me-2"></i> Invite to Workspace</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'invite_team_member' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="text-theme-muted small mb-4">Send an invitation link to a colleague to join the <strong>{{ user.profile.company.name }}</strong> workspace.</p>
+                    <div class="mb-3">
+                        <label class="form-label text-uppercase small fw-bold text-info">Email Address</label>
+                        <input type="email" name="email" class="form-control" style="background: rgba(0,0,0,0.1); border: 1px solid var(--border-color); color: var(--text-main);" placeholder="colleague@company.com" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-theme">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 text-theme-main" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info fw-bold rounded-pill px-4 text-dark">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts for the Theme & Charts -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Theme Toggling Logic ---
+        const themeBtn = document.getElementById('themeToggleBtn');
+        const htmlElement = document.documentElement;
+        const icon = themeBtn.querySelector('i');
+        const text = themeBtn.querySelector('span');
+
+        const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+        setTheme(savedTheme);
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        function setTheme(theme) {
+            htmlElement.setAttribute('data-theme', theme);
+            localStorage.setItem('ecogap-theme', theme);
+            
+            const closeBtns = document.querySelectorAll('.btn-close');
+            
+            if (theme === 'light') {
+                icon.className = 'fa-solid fa-sun text-warning';
+                if(text) text.textContent = 'Light Mode';
+                Chart.defaults.color = '#64748b'; 
+                closeBtns.forEach(btn => btn.classList.remove('btn-close-white'));
+            } else {
+                icon.className = 'fa-solid fa-moon';
+                if(text) text.textContent = 'Dark Mode';
+                Chart.defaults.color = '#94a3b8'; 
+                closeBtns.forEach(btn => btn.classList.add('btn-close-white'));
+            }
+            
+            // Update charts smoothly
+            if (typeof Chart !== 'undefined') {
+                for (let id in Chart.instances) {
+                    Chart.instances[id].update();
+                }
+            }
+        }
+
+        // --- Chart Renderings ---
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.scale.grid.display = false; 
+
+        // 1. XBRL Bar Chart
+        const xbrlLabels = [{% for job in xbrl_jobs %}"{{ job.reference_standard }}",{% empty %}"No Data"{% endfor %}];
+        const xbrlData = [{% for job in xbrl_jobs %}{{ job.compliance_score }},{% empty %}0{% endfor %}];
+        new Chart(document.getElementById('xbrlBarChart').getContext('2d'), {
+            type: 'bar',
+            data: { 
+                labels: xbrlLabels.slice(0,4), 
+                datasets: [{ 
+                    label: 'Match %', 
+                    data: xbrlData.slice(0,4), 
+                    backgroundColor: '#06b6d4', 
+                    borderRadius: 6, 
+                    barThickness: 24 
+                }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, border: { display: false }, ticks: {font: {size: 10}} }, x: { border: { display: false }, ticks: {font: {size: 10}} } } }
+        });
+
+        // 2. YoY Delta Bar Chart
+        const yoyData = {{ yoy_data|default:"[0,0,0,0]" }};
+        new Chart(document.getElementById('yoyDeltaChart').getContext('2d'), {
+            type: 'bar',
+            data: { 
+                labels: ['Improved', 'Regressed', 'Unchanged', 'New Gap'], 
+                datasets: [{ 
+                    data: yoyData, 
+                    backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6'], 
+                    borderRadius: 6, 
+                    barThickness: 24 
+                }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, border: { display: false }, ticks: {font: {size: 10}, stepSize: 1} }, x: { border: { display: false }, ticks: {font: {size: 10}} } } }
+        });
+
+        // 3. Peer Benchmark Bar Chart
+        const peerData = {{ peer_data|default:"[0,0,0,0]" }};
+        new Chart(document.getElementById('peerBenchmarkChart').getContext('2d'), {
+            type: 'bar',
+            data: { 
+                labels: ['Doc 1 Lead', 'Doc 2 Lead', 'Parity', 'Mutual Gap'], 
+                datasets: [{ 
+                    data: peerData, 
+                    backgroundColor: ['#3b82f6', '#d946ef', '#10b981', '#ef4444'], 
+                    borderRadius: 6, 
+                    barThickness: 24 
+                }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, border: { display: false }, ticks: {font: {size: 10}, stepSize: 1} }, x: { border: { display: false }, ticks: {font: {size: 10}} } } }
+        });
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

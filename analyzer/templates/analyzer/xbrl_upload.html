@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>XBRL Compliance Check | ECO GAP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s ease, color 0.3s ease; }
+        
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .glass-card { background: var(--bg-card); backdrop-filter: blur(15px); border: 1px solid var(--border-color); border-radius: 20px; padding: 40px; width: 100%; max-width: 700px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1); }
+        .form-select, .form-control { background: rgba(128,128,128,0.1) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+        .form-select:focus, .form-control:focus { box-shadow: none; border-color: #198754 !important; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+            
+            <button class="theme-toggle" id="themeToggleBtn">
+                <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+            </button>
+
+            <a href="{% url 'profile' %}" class="text-decoration-none">
+                <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                    {{ user.username|slice:":2"|upper|default:"AD" }}
+                </div>
+            </a>
+
+            <form action="{% url 'logout' %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 border-theme">Log In</a>
+            <a href="{% url 'register' %}" class="btn btn-sm btn-success rounded-pill px-3">Sign Up</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+    <div class="glass-card">
+        <div class="text-center mb-4">
+            <i class="fa-solid fa-code text-warning fa-3x mb-3"></i>
+            <h2 class="fw-bold text-theme-main">XBRL Taxonomy Validator</h2>
+            <p class="text-theme-muted">Compare your digital tags against official GRI and IFRS taxonomies.</p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form action="{% url 'xbrl_upload' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="form-label text-theme-muted fw-bold">1. Select Reference Taxonomy</label>
+                <select name="standard" class="form-select">
+                    <option value="GRI">GRI Standards (2025)</option>
+                    <option value="IFRS S1">IFRS S1 (General)</option>
+                    <option value="IFRS S2">IFRS S2 (Climate)</option>
+                    <option value="IFRS Accounting">IFRS Accounting</option>
+                    <option value="SASB">SASB Standards</option>
+                    <option value="ESRS">ESRS</option>
+                    <option value="US GAAP">US GAAP</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-theme-muted fw-bold">Optional: Upload Custom Taxonomy (CSV, XML, XSD)</label>
+                <input type="file" name="custom_reference" class="form-control" accept=".csv,.xml,.xsd">
+                <small class="text-warning"><i class="fa-solid fa-circle-info"></i> Leave blank to use our official built-in frameworks.</small>
+            </div>
+
+            <label class="form-label text-theme-muted fw-bold">2. Provide Your XBRL/iXBRL Document</label>
+            <ul class="nav nav-pills nav-fill mb-3 gap-2" id="inputMethod" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active bg-success bg-opacity-25 text-success border border-success" data-bs-toggle="pill" data-bs-target="#file-upload" type="button">File Upload</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link bg-theme-card text-theme-main border-theme" data-bs-toggle="pill" data-bs-target="#text-paste" type="button">Paste Raw Text</button>
+                </li>
+            </ul>
+
+            <div class="tab-content mb-4">
+                <div class="tab-pane fade show active" id="file-upload">
+                    <input type="file" name="document" class="form-control form-control-lg" accept=".xml,.xhtml,.xbrl,.html">
+                </div>
+                <div class="tab-pane fade" id="text-paste">
+                    <textarea name="raw_text" class="form-control" rows="5" placeholder="Paste your raw iXBRL/XML tags here..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin me-2\'></i>Validating Tags...';">
+                <i class="fa-solid fa-magnifying-glass-chart me-2"></i> Run XBRL Comparison
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+
+        const pills = document.querySelectorAll('#inputMethod .nav-link');
+        pills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                pills.forEach(p => { p.classList.remove('bg-success', 'bg-opacity-25', 'border-success', 'text-success'); p.classList.add('bg-theme-card', 'border-theme', 'text-theme-main'); });
+                pill.classList.remove('bg-theme-card', 'border-theme', 'text-theme-main');
+                pill.classList.add('bg-success', 'bg-opacity-25', 'border-success', 'text-success');
+            });
+        });
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

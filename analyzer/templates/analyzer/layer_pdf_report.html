@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ layer.standard }} - {{ layer.layer_type }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.5;
+            font-size: 10pt;
+        }
+        .header {
+            border-bottom: 2px solid #198754;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #0f2027;
+            margin: 0 0 5px 0;
+            font-size: 24pt;
+        }
+        .header h3 {
+            color: #198754;
+            margin: 0;
+            font-size: 14pt;
+        }
+        .meta-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            font-size: 9pt;
+        }
+        .summary-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #198754;
+            padding: 15px;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            page-break-inside: auto;
+        }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        th {
+            background-color: #0f2027;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            border-bottom: 1px solid #ddd;
+            padding: 12px;
+            vertical-align: top;
+        }
+        .status-badge {
+            font-weight: bold;
+            color: #198754; /* Default green */
+        }
+        .status-high-risk { color: #dc3545; }
+        .status-warning { color: #fd7e14; }
+        .recommendation {
+            margin-top: 8px;
+            color: #666;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ECO GAP ANALYZER</h1>
+        <h3>{{ layer.standard }} Framework: {{ layer.layer_type }}</h3>
+    </div>
+
+    <div class="meta-info">
+        <strong>Report ID:</strong> {{ report.id }}<br>
+        <strong>Generated On:</strong> {{ generated_date }}<br>
+        <strong>Document Analysed:</strong> {{ report.document.name }}
+    </div>
+
+    <div class="summary-box">
+        <strong>AI Executive Summary:</strong><br>
+        {{ layer.summary_text }}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">
+                    {% if 'Keyword' in layer.layer_type %}
+                        Keywords
+                    {% elif 'Risk' in layer.layer_type %}
+                        Risk Category / Opportunity
+                    {% else %}
+                        Requirement / Context
+                    {% endif %}
+                </th>
+                <th style="width: 15%;">
+                    {% if 'Risk' in layer.layer_type %}
+                        Magnitude & Horizon
+                    {% else %}
+                        Status
+                    {% endif %}
+                </th>
+                <th style="width: 35%;">
+                    {% if 'Risk' in layer.layer_type %}
+                        Financial Effect Channel
+                    {% else %}
+                        Context & Details
+                    {% endif %}
+                </th>
+                <th style="width: 20%;">Recommendation</th>
+                <th style="width: 5%;">Pg</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for finding in findings %}
+            <tr>
+                <td><strong>{{ finding.item }}</strong></td>
+                <td>
+                    <span class="status-badge 
+                        {% if 'High' in finding.status or 'Unmet' in finding.status or 'Basic' in finding.status %}status-high-risk
+                        {% elif 'Partial' in finding.status or 'Medium' in finding.status or 'Intermediate' in finding.status %}status-warning
+                        {% endif %}">
+                        {{ finding.status }}
+                    </span>
+                </td>
+                <td>
+                    {{ finding.details }}
+                    {% if finding.raw_excerpt and finding.raw_excerpt != "N/A" %}
+                        <div style="margin-top: 5px; font-size: 8pt; color: #555; background: #f1f1f1; padding: 4px;">
+                            <em>Excerpt: "{{ finding.raw_excerpt }}"</em>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>{{ finding.recommendation }}</td>
+                <td style="text-align: center; font-weight: bold;">{{ finding.page_number|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center;">No findings available for this layer.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Workspace | Eco Gap Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            transition: background 0.3s ease, color 0.3s ease; 
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .card-glass { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; box-shadow: 0 4px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        
+        .form-control, .form-select { background: rgba(128,128,128,0.1) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; padding: 12px 16px; }
+        .form-control:focus, .form-select:focus { box-shadow: none; border-color: #198754 !important; }
+        
+        #id_industries { max-height: 250px; overflow-y: auto; background: rgba(128,128,128,0.1); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin: 0; }
+        #id_industries > div { margin-bottom: 10px; }
+        #id_industries label { color: var(--text-main); display: flex; align-items: center; gap: 12px; font-size: 0.95rem; cursor: pointer; }
+        #id_industries input[type="checkbox"] { width: 18px; height: 18px; accent-color: #198754; cursor: pointer; flex-shrink: 0; }
+        
+        .btn-brand { background: #198754; color: white; border: none; font-weight: 600; padding: 12px; }
+        .btn-brand:hover { background: #146c43; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+        
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+
+        <a href="{% url 'profile' %}" class="text-decoration-none">
+            <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                {{ user.username|slice:":2"|upper|default:"AD" }}
+            </div>
+        </a>
+
+        <form action="{% url 'logout' %}" method="post" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="container flex-grow-1 d-flex align-items-center justify-content-center pb-5">
+    <div class="card-glass">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-theme pb-3">
+            <h4 class="fw-bold text-theme-main mb-0"><i class="fa-solid fa-pen-to-square text-success me-2"></i> Edit Workspace</h4>
+            <a href="{% url 'profile' %}" class="btn btn-sm btn-outline-secondary text-theme-main border-theme rounded-pill px-3">Cancel</a>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="mb-4">
+                    <label class="form-label text-theme-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="text-warning small mt-2"><i class="fa-solid fa-circle-info me-1"></i>{{ field.help_text }}</div>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-brand w-100 rounded-pill mt-2">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+
+    const industryMap = {
+        "Consumer Goods": ["Apparel, Accessories & Footwear", "Appliance Manufacturing", "Building Products & Furnishings", "Household & Personal Products", "Multiline & Specialty Retailers & Distributors", "E-Commerce", "Toys & Sporting Goods"],
+        "Extractives & Minerals Processing": ["Coal Operations", "Construction Materials", "Iron & Steel Producers", "Metals & Mining", "Oil & Gas – Exploration & Production", "Oil & Gas – Midstream", "Oil & Gas – Refining & Marketing", "Oil & Gas – Services"],
+        "Financials": ["Asset Management & Custody Activities", "Commercial Banks", "Consumer Finance", "Insurance", "Investment Banking & Brokerage", "Mortgage Finance", "Security & Commodity Exchanges"],
+        "Food & Beverage": ["Agricultural Products", "Alcoholic Beverages", "Food Retailers & Distributors", "Meat, Poultry & Dairy", "Non-Alcoholic Beverages", "Processed Foods", "Restaurants", "Tobacco"],
+        "Health Care": ["Biotechnology & Pharmaceuticals", "Medical Equipment & Supplies", "Health Care Delivery", "Managed Care"],
+        "Infrastructure": ["Electric Utilities & Power Generators", "Gas Utilities & Distributors", "Water Utilities & Services", "Renewable Energy", "Engineering & Construction Services", "Waste Management", "Real Estate"],
+        "Renewable Resources & Alternative Energy": ["Biofuels", "Forestry Management", "Fuel Cells & Industrial Batteries", "Pulp & Paper Products", "Solar Technology & Project Developers", "Wind Technology & Project Developers"],
+        "Resource Transformation": ["Chemicals", "Containers & Packaging", "Electrical & Electronic Equipment", "Industrial Machinery & Goods", "Aerospace & Defense"],
+        "Services": ["Advertising & Marketing", "Casinos & Gaming", "Education Services", "Hotels & Lodging", "Leisure Facilities", "Media & Entertainment", "Professional & Commercial Services"],
+        "Technology & Communications": ["Hardware", "Internet Media & Services", "Semiconductors", "Software & IT Services", "Telecommunications Services"],
+        "Transportation": ["Air Freight & Logistics", "Airlines", "Automobiles", "Auto Parts", "Marine Transportation", "Rail Transportation", "Road Transportation"]
+    };
+
+    function updateIndustries(isInitialLoad) {
+        const sectorSelect = document.getElementById("id_sector");
+        if (!sectorSelect) return;
+        
+        const selectedSector = sectorSelect.value;
+        const validIndustries = industryMap[selectedSector] || [];
+        const checkboxes = document.querySelectorAll('#id_industries input[type="checkbox"]');
+        
+        checkboxes.forEach(cb => {
+            const industryName = cb.value;
+            const wrapperDiv = cb.closest('div'); 
+            
+            if (validIndustries.includes(industryName)) {
+                wrapperDiv.style.display = 'block';
+            } else {
+                wrapperDiv.style.display = 'none';
+                if (!isInitialLoad) {
+                    cb.checked = false; 
+                }
+            }
+        });
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        updateIndustries(true); 
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

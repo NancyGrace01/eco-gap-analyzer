@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Upgrade to Premium | Eco Gap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top center, #101827, #06090f 50%, #000000 100%);
+            --bg-card: rgba(20, 25, 35, 0.6);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s ease, color 0.3s ease; }
+        
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .pricing-card { 
+            background: var(--bg-card); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(16, 185, 129, 0.3); 
+            border-radius: 24px; 
+            padding: 40px; 
+            box-shadow: 0 20px 50px rgba(16, 185, 129, 0.1); 
+            max-width: 500px;
+            margin: auto;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: -50px; right: -50px;
+            width: 150px; height: 150px;
+            background: #10b981;
+            filter: blur(80px);
+            opacity: 0.3;
+            border-radius: 50%;
+        }
+
+        .btn-brand { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: 700; padding: 16px; border-radius: 12px; font-size: 1.1rem; }
+        .btn-brand:hover { background: linear-gradient(135deg, #059669, #047857); color: white; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3); }
+        
+        .feature-item { margin-bottom: 16px; font-size: 1.05rem; display: flex; align-items: center; color: var(--text-main); }
+        .feature-item i { color: #10b981; margin-right: 12px; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-5">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+        
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+
+        {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="text-decoration-none">
+            <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                {{ user.username|slice:":2"|upper|default:"AD" }}
+            </div>
+        </a>
+
+        <form action="{% url 'logout' %}" method="post" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container flex-grow-1 d-flex align-items-center justify-content-center pb-5">
+    <div class="pricing-card w-100 text-center">
+        
+        <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-3 py-2 mb-4 text-uppercase" style="letter-spacing: 1px;">Enterprise Grade</span>
+        
+        <h2 class="fw-bold text-theme-main mb-2">Eco Gap <span class="text-success">Pro</span></h2>
+        <p class="text-theme-muted mb-4">Unlock the full potential of your ESG gap analysis platform.</p>
+        
+        <div class="mb-5">
+            <h1 class="display-3 fw-bold text-theme-main mb-0">₦50,000</h1>
+            <span class="text-theme-muted">/ month per organization</span>
+        </div>
+
+        <div class="text-start mb-5" style="max-width: 300px; margin: 0 auto;">
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> View Full 18-Layer Results</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Unlock Visual Analytics Charts</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Export Official Audit PDFs</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Enable YoY & Peer Benchmarking</div>
+            <div class="feature-item"><i class="fa-solid fa-circle-check"></i> Invite Unlimited Team Members</div>
+        </div>
+
+        <!-- PAYSTACK TRIGGER BUTTON -->
+        <button onclick="payWithPaystack()" class="btn btn-brand w-100">
+            Secure Checkout <i class="fa-solid fa-arrow-right ms-2"></i>
+        </button>
+        <p class="text-theme-muted small mt-3"><i class="fa-solid fa-lock text-success me-1"></i> Secured by Paystack</p>
+    </div>
+</div>
+
+<!-- PAYSTACK INLINE SCRIPT -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+  function payWithPaystack() {
+    let handler = PaystackPop.setup({
+      key: '{{ paystack_pub_key }}', 
+      email: '{{ request.user.email }}',
+      amount: 50000 * 100, // 50,000 NGN in Kobo
+      currency: 'NGN',
+      ref: 'ECOGAP_' + Math.floor((Math.random() * 1000000000) + 1), // Generate random reference
+      callback: function(response) {
+          window.location.href = "{% url 'verify_payment' %}?reference=" + response.reference;
+      },
+      onClose: function() {
+          console.log("Payment window closed.");
+      }
+    });
+    handler.openIframe();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

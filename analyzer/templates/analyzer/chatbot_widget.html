@@ -1,0 +1,189 @@
+<style>
+    .chat-widget {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+    }
+    .chat-toggle-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #198754;
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        font-size: 24px;
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+    .chat-toggle-btn:hover {
+        transform: scale(1.1);
+    }
+    .chat-window {
+        display: none;
+        position: absolute;
+        bottom: 80px;
+        right: 0;
+        width: 350px;
+        height: 450px;
+        /* UPDATED TO USE THEME VARIABLES */
+        background-color: var(--bg-main, #1a202c);
+        border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .chat-header {
+        background-color: #198754;
+        padding: 15px;
+        color: white;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chat-body {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .chat-message {
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    .message-user {
+        /* UPDATED TO USE THEME VARIABLES */
+        background-color: var(--bg-card, rgba(255,255,255,0.1));
+        color: var(--text-main, white);
+        border: 1px solid var(--border-color, transparent);
+        align-self: flex-end;
+        border-bottom-right-radius: 0;
+    }
+    .message-ai {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: var(--text-main, #d1e7dd);
+        align-self: flex-start;
+        border-bottom-left-radius: 0;
+        border: 1px solid rgba(25, 135, 84, 0.3);
+    }
+    .chat-footer {
+        padding: 15px;
+        /* UPDATED TO USE THEME VARIABLES */
+        background-color: var(--bg-card, rgba(0,0,0,0.2));
+        border-top: 1px solid var(--border-color, rgba(255,255,255,0.05));
+        display: flex;
+        gap: 10px;
+    }
+    .chat-input {
+        flex-grow: 1;
+        /* UPDATED TO USE THEME VARIABLES */
+        background: var(--bg-main, rgba(255,255,255,0.05));
+        border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+        border-radius: 20px;
+        padding: 8px 15px;
+        color: var(--text-main, white);
+        outline: none;
+    }
+    .chat-send-btn {
+        background: #198754;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+    }
+    /* Typing indicator animation */
+    .typing-indicator { display: none; align-self: flex-start; color: #198754; font-size: 0.8rem; padding: 5px 15px; }
+</style>
+
+<div class="chat-widget d-print-none">
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <span><i></i> EcoAssist </span>
+            <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="toggleChat()"></i>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-message message-ai">
+                Hello! I am EcoAssist. Do you have any questions about your GRI/IFRS sustainability analysis, XBRL taxonomy validation, or how to navigate your audit results?
+            </div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator"><i class="fa-solid fa-ellipsis fa-fade"></i> AI is thinking...</div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Type a question..." onkeypress="handleEnter(event)">
+            <button class="chat-send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <button class="chat-toggle-btn" onclick="toggleChat()">
+        <i class="fa-solid fa-message"></i>
+    </button>
+</div>
+
+<script>
+    function toggleChat() {
+        const chatWindow = document.getElementById('chatWindow');
+        chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        const chatBody = document.getElementById('chatBody');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Add User Message to UI
+        const userDiv = document.createElement('div');
+        userDiv.className = 'chat-message message-user';
+        userDiv.innerText = message;
+        chatBody.appendChild(userDiv);
+        
+        input.value = '';
+        chatBody.scrollTop = chatBody.scrollHeight;
+        
+        // Show loading indicator
+        typingIndicator.style.display = 'block';
+
+        try {
+            // Send to Django Backend
+            const response = await fetch('/chat-api/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            const data = await response.json();
+
+            // Hide loading indicator
+            typingIndicator.style.display = 'none';
+
+            // Add AI Message to UI
+            const aiDiv = document.createElement('div');
+            aiDiv.className = 'chat-message message-ai';
+            aiDiv.innerText = data.reply || data.error;
+            chatBody.appendChild(aiDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+        } catch (error) {
+            typingIndicator.style.display = 'none';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'chat-message message-ai text-danger';
+            errorDiv.innerText = "Network error. Please try again.";
+            chatBody.appendChild(errorDiv);
+        }
+    }
+</script>

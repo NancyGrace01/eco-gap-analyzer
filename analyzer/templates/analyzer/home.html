@@ -1,0 +1,195 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco Gap Analyzer | Enterprise ESG Compliance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b1114;
+            background-image: radial-gradient(circle at 15% 50%, rgba(25, 135, 84, 0.08), transparent 25%), 
+                              radial-gradient(circle at 85% 30%, rgba(32, 201, 151, 0.08), transparent 25%);
+            color: #e2e8f0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+        .navbar {
+            background: rgba(11, 17, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .btn-brand {
+            background: #198754;
+            color: white;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-brand:hover {
+            background: #146c43;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(25, 135, 84, 0.2);
+        }
+        .hero-section {
+            padding: 120px 0 80px;
+            position: relative;
+        }
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff 0%, #a0aec0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #a0aec0;
+            margin-bottom: 40px;
+            font-weight: 400;
+            max-width: 600px;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px 30px;
+            height: 100%;
+            transition: all 0.4s ease;
+        }
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(25, 135, 84, 0.3);
+            transform: translateY(-10px);
+        }
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: rgba(25, 135, 84, 0.1);
+            color: #20c997;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 24px;
+        }
+        .mockup-container {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+            transition: transform 0.5s ease;
+        }
+        .mockup-container:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+        }
+        .security-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 30px 0;
+            font-size: 0.85rem;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg fixed-top py-3 px-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" href="/">
+            <div style="width: 32px; height: 32px; background: #198754; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-leaf text-white small"></i>
+            </div>
+            ECO GAP
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-brand rounded-pill px-4 fw-medium">Go to Dashboard</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="text-white text-decoration-none fw-medium me-3">Log In</a>
+                <a href="{% url 'register' %}" class="btn btn-brand rounded-pill px-4 fw-medium">Start Free Trial</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<div class="container hero-section">
+    <div class="row align-items-center min-vh-75">
+        <div class="col-lg-6" data-aos="fade-up" data-aos-duration="1000">
+            <div class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-2 mb-4 fw-medium">
+                GRI & IFRS Ready for 2026
+            </div>
+            <h1 class="hero-title">Automate your<br>ESG compliance.</h1>
+            <p class="hero-subtitle">Stop manually checking disclosures. Our proprietary AI and deterministic XBRL engines audit your sustainability reports against GRI and IFRS standards in seconds.</p>
+            
+            <div class="d-flex gap-3">
+                <a href="{% url 'upload_document' %}" class="btn btn-brand btn-lg rounded-pill px-5 fw-bold shadow-sm">Audit a PDF</a>
+                <a href="{% url 'xbrl_upload' %}" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold"><i class="fa-solid fa-code me-2"></i> Validate XBRL</a>
+            </div>
+        </div>
+        <div class="col-lg-6 mt-5 mt-lg-0" data-aos="fade-left" data-aos-duration="1200" data-aos-delay="200">
+            <div class="mockup-container">
+                <img src="{% static 'images/dashboard-mockup.png' %}" class="img-fluid rounded shadow-lg" alt="App Mockup">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5 my-5">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <h2 class="fw-bold mb-3">Enterprise-Grade Architecture</h2>
+        <p class="text-muted">Built for precision, speed, and absolute data security.</p>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="feature-card">
+                <div class="icon-box"><i class="fa-solid fa-layer-group"></i></div>
+                <h4 class="fw-bold text-white mb-3">Multi-Layered Analysis</h4>
+                <p class="text-white-50 mb-0">Combines strict deterministic keyword scanning with LLM-powered contextual evaluation for zero-hallucination gap detection.</p>
+            </div>
+        </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="feature-card">
+                <div class="icon-box"><i class="fa-solid fa-file-code"></i></div>
+                <h4 class="fw-bold text-white mb-3">iXBRL Taxonomy Validation</h4>
+                <p class="text-white-50 mb-0">Line-by-line mathematical set comparison to catch missing required elements and unrecognized digital tags instantly.</p>
+            </div>
+        </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+            <div class="feature-card">
+                <div class="icon-box"><i class="fa-solid fa-shield-halved"></i></div>
+                <h4 class="fw-bold text-white mb-3">Bank-Level Security</h4>
+                <p class="text-white-50 mb-0">AES-256 encryption, automatic PII masking, and 10-minute self-destructing volatile memory ensure complete privacy.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="security-footer text-center mt-auto">
+    <div class="container">
+        <div class="d-flex justify-content-center flex-wrap gap-4 mb-3">
+            <span><i class="fa-solid fa-lock text-success me-2"></i> End-to-End Encrypted</span>
+            <span><i class="fa-solid fa-server text-success me-2"></i> Ephemeral Storage</span>
+            <span><i class="fa-solid fa-check-double text-success me-2"></i> Audit-Ready Outputs</span>
+        </div>
+        <div>&copy; 2026 Eco Gap Analyzer. All rights reserved.</div>
+    </div>
+</footer>
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    AOS.init({ once: true, offset: 50 });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

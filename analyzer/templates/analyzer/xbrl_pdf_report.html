@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>XBRL Diagnostic Report</title>
+    <style>
+        @page { size: A4 portrait; margin: 1.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #333333; line-height: 1.5; }
+        .header-box { border-bottom: 3px solid #0f2027; padding-bottom: 15px; margin-bottom: 30px; }
+        .company-name { color: #0f2027; font-size: 24pt; font-weight: bold; margin: 0; text-transform: uppercase; }
+        .report-title { color: #198754; font-size: 16pt; font-weight: bold; margin: 5px 0 0 0; }
+        .meta-text { font-size: 9pt; color: #666666; margin-top: 10px; }
+        
+        .score-box { background-color: #f8f9fa; border: 1px solid #dddddd; padding: 20px; text-align: center; margin-bottom: 30px; border-radius: 5px; }
+        .score-number { font-size: 32pt; font-weight: bold; margin: 0; }
+        .score-high { color: #198754; }
+        .score-medium { color: #ffc107; }
+        .score-low { color: #dc3545; }
+
+        .stats-table { width: 100%; margin-bottom: 30px; border-collapse: collapse; }
+        .stats-table td { width: 33%; text-align: center; border: 1px solid #dddddd; padding: 15px; background-color: #f8f9fa; }
+        .stat-value { font-size: 18pt; font-weight: bold; display: block; margin-bottom: 5px; }
+        .text-danger { color: #dc3545; }
+        .text-warning { color: #d39e00; }
+        .text-info { color: #0dcaf0; }
+
+        .section-title { font-size: 14pt; font-weight: bold; margin-top: 30px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .explainer { font-style: italic; color: #555555; margin-bottom: 15px; font-size: 9pt; }
+        
+        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        table.data-table th { background-color: #0f2027; color: #ffffff; padding: 8px; text-align: left; font-size: 9pt; }
+        table.data-table td { border-bottom: 1px solid #dddddd; padding: 8px; font-family: monospace; font-size: 9pt; color: #444; }
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <p class="company-name">{{ company.name|default:"Independent XBRL Audit" }}</p>
+        <p class="report-title">Digital Taxonomy Diagnostic Report</p>
+        <div class="meta-text">
+            <strong>Reference Framework:</strong> {{ job.reference_standard }}<br>
+            <strong>Generated On:</strong> {{ generated_date }}<br>
+            <strong>Sector:</strong> {{ company.sector|default:"N/A" }}
+        </div>
+    </div>
+
+    <div class="score-box">
+        <p style="margin: 0; text-transform: uppercase; font-weight: bold; color: #555;">Overall Compliance Score</p>
+        <p class="score-number {% if job.compliance_score >= 80 %}score-high{% elif job.compliance_score >= 50 %}score-medium{% else %}score-low{% endif %}">
+            {{ job.compliance_score }}%
+        </p>
+    </div>
+
+    <table class="stats-table">
+        <tr>
+            <td>
+                <span class="stat-value text-info">{{ summary.total_expected }}</span>
+                Expected Framework Tags
+            </td>
+            <td>
+                <span class="stat-value text-danger">{{ summary.missing_count }}</span>
+                Missing Mandatory Tags
+            </td>
+            <td>
+                <span class="stat-value text-warning">{{ summary.unrecognized_count }}</span>
+                Unrecognized / Custom Tags
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title" style="color: #dc3545;">Missing Required Elements</div>
+    <p class="explainer">Action Required: The following concepts are mandated by the {{ job.reference_standard }} taxonomy but were absent from your document.</p>
+    <table class="data-table">
+        <thead><tr><th>Missing Element Name</th></tr></thead>
+        <tbody>
+            {% for tag in missing %}
+            <tr><td>{{ tag }}</td></tr>
+            {% empty %}
+            <tr><td style="text-align: center; color: #198754; font-family: Helvetica;">No missing tags found. 100% Compliant!</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title" style="color: #d39e00;">Unrecognized / Custom Extensions</div>
+    <p class="explainer">Review Recommended: These tags were found in the document but do not map to the official {{ job.reference_standard }} dictionary.</p>
+    <table class="data-table">
+        <thead><tr><th style="background-color: #d39e00;">Custom Element Name</th></tr></thead>
+        <tbody>
+            {% for tag in unrecognized %}
+            <tr><td>{{ tag }}</td></tr>
+            {% empty %}
+            <tr><td style="text-align: center; color: #198754; font-family: Helvetica;">No custom extensions found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title" style="color: #198754;">Successfully Matched Elements</div>
+    <p class="explainer">Validated: These tags perfectly match the official taxonomy. (Showing top 100 matches. Export CSV for full list).</p>
+    <table class="data-table">
+        <thead><tr><th style="background-color: #198754;">Validated Element Name</th></tr></thead>
+        <tbody>
+            {% for tag in matched|slice:":100" %}
+            <tr><td>{{ tag }}</td></tr>
+            {% empty %}
+            <tr><td style="text-align: center; font-family: Helvetica;">No valid tags matched.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

@@ -1,0 +1,174 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | ECO GAP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(135deg, #0f2027, #203a43, #2c5364);
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: linear-gradient(135deg, #f0fdf4, #e2e8f0, #cbd5e1);
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            background: var(--bg-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        
+        /* Universal Topbar */
+        .topbar { background: transparent; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #198754; color: #198754; }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], input[type="password"] {
+            background: rgba(128, 128, 128, 0.1) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-main) !important;
+            border-radius: 10px;
+            padding: 12px 15px;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        input:focus {
+            background: rgba(128, 128, 128, 0.15) !important;
+            border-color: #198754 !important;
+            box-shadow: 0 0 10px rgba(25, 135, 84, 0.3);
+        }
+        .btn-login {
+            background: linear-gradient(45deg, #198754, #20c997);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-login:hover {
+            transform: scale(1.02);
+            color: white;
+        }
+        label { display: none; } 
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> ECO GAP ANALYZER
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+    </div>
+</div>
+
+<div class="flex-grow-1 d-flex align-items-center justify-content-center px-3 pb-5">
+    <div class="glass-card text-center">
+        <div class="mb-4">
+            <i class="fa-solid fa-user-astronaut text-success fs-1 mb-3"></i>
+            <h3 class="fw-bold text-theme-main">Welcome Back</h3>
+            <p class="text-theme-muted">Log in to access your saved reports.</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="alert alert-danger p-2 small mb-3 border border-danger bg-danger bg-opacity-25 text-danger fw-medium" style="border-radius: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Incorrect username or password.
+                </div>
+            {% endif %}
+
+            <div class="input-group mb-3">
+                <input type="text" name="username" placeholder="Username" required class="form-control glass-input">
+            </div>
+
+            <div class="input-group mb-3">
+                <input type="password" name="password" placeholder="Password" required class="form-control glass-input">
+            </div>
+
+            <button type="submit" class="btn btn-login text-white">
+                <i class="fa-solid fa-right-to-bracket me-2"></i> Log In
+            </button>
+            
+            <input type="hidden" name="next" value="{{ next|default:'/dashboard/' }}">
+        </form>
+
+        <div class="mt-4 pt-3 border-top border-theme">
+            <small class="text-theme-muted">New here? <a href="{% url 'register' %}" class="text-success fw-bold text-decoration-none">Create Account</a></small>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,229 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | Eco Gap Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: #0b1114;
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: transparent; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #198754; color: #198754; }
+
+        .card-glass { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            padding: 40px; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 550px; 
+        }
+        .form-control, .form-select { 
+            background: rgba(128,128,128,0.1) !important; 
+            border: 1px solid var(--border-color) !important; 
+            color: var(--text-main) !important; 
+            padding: 12px 16px;
+        }
+        .form-control:focus, .form-select:focus { 
+            box-shadow: none; 
+            border-color: #198754 !important; 
+        }
+
+        /* --- BEAUTIFUL CHECKBOX STYLING --- */
+        #id_industries { 
+            max-height: 250px; 
+            overflow-y: auto; 
+            background: rgba(128,128,128,0.1); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 15px; 
+            margin: 0;
+        }
+        #id_industries > div { margin-bottom: 10px; }
+        
+        #id_industries label { 
+            color: var(--text-main); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            font-size: 0.95rem; 
+            cursor: pointer; 
+        }
+        
+        #id_industries input[type="checkbox"] { 
+            width: 18px; 
+            height: 18px; 
+            accent-color: #198754; 
+            cursor: pointer; 
+            flex-shrink: 0;
+        }
+
+        .btn-brand { background: #198754; color: white; border: none; font-weight: 600; padding: 12px; }
+        .btn-brand:hover { background: #146c43; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> ECO GAP ANALYZER
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+    </div>
+</div>
+
+<div class="flex-grow-1 d-flex align-items-center justify-content-center px-3 pb-5">
+    <div class="card-glass">
+        <div class="text-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="#198754" viewBox="0 0 16 16" class="mb-3">
+              <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM2.8 11.2a5.5 5.5 0 0 1 8.2-7.5l-8.2 7.5zm9.4-.9a5.5 5.5 0 0 1-8.2 7.5l8.2-7.5z"/>
+            </svg>
+            <h3 class="fw-bold text-theme-main">Create Workspace</h3>
+            <p class="text-theme-muted small">Sign up to automate your sustainability gap assessments.</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label text-theme-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;">{{ field.label }}</label>
+                    
+                    {{ field }}
+                    
+                    {% if field.help_text %}
+                        <div class="text-warning small mt-2"><i class="fa-solid fa-circle-info me-1"></i>{{ field.help_text }}</div>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-brand w-100 rounded-pill mt-4">Create Account</button>
+        </form>
+        
+        <div class="text-center mt-4 border-top border-theme pt-3">
+            <small class="text-theme-muted">Already have an account? <a href="{% url 'login' %}" class="text-success text-decoration-none fw-bold">Log in</a></small>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if(themeBtn) {
+            const htmlElement = document.documentElement;
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('span');
+
+            const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+            setTheme(savedTheme);
+
+            themeBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-theme', theme);
+                localStorage.setItem('ecogap-theme', theme);
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun text-warning';
+                    if(text) text.textContent = 'Light Mode';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                    if(text) text.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+
+    const industryMap = {
+        "Consumer Goods": ["Apparel, Accessories & Footwear", "Appliance Manufacturing", "Building Products & Furnishings", "Household & Personal Products", "Multiline & Specialty Retailers & Distributors", "E-Commerce", "Toys & Sporting Goods"],
+        "Extractives & Minerals Processing": ["Coal Operations", "Construction Materials", "Iron & Steel Producers", "Metals & Mining", "Oil & Gas – Exploration & Production", "Oil & Gas – Midstream", "Oil & Gas – Refining & Marketing", "Oil & Gas – Services"],
+        "Financials": ["Asset Management & Custody Activities", "Commercial Banks", "Consumer Finance", "Insurance", "Investment Banking & Brokerage", "Mortgage Finance", "Security & Commodity Exchanges"],
+        "Food & Beverage": ["Agricultural Products", "Alcoholic Beverages", "Food Retailers & Distributors", "Meat, Poultry & Dairy", "Non-Alcoholic Beverages", "Processed Foods", "Restaurants", "Tobacco"],
+        "Health Care": ["Biotechnology & Pharmaceuticals", "Medical Equipment & Supplies", "Health Care Delivery", "Managed Care"],
+        "Infrastructure": ["Electric Utilities & Power Generators", "Gas Utilities & Distributors", "Water Utilities & Services", "Renewable Energy", "Engineering & Construction Services", "Waste Management", "Real Estate"],
+        "Renewable Resources & Alternative Energy": ["Biofuels", "Forestry Management", "Fuel Cells & Industrial Batteries", "Pulp & Paper Products", "Solar Technology & Project Developers", "Wind Technology & Project Developers"],
+        "Resource Transformation": ["Chemicals", "Containers & Packaging", "Electrical & Electronic Equipment", "Industrial Machinery & Goods", "Aerospace & Defense"],
+        "Services": ["Advertising & Marketing", "Casinos & Gaming", "Education Services", "Hotels & Lodging", "Leisure Facilities", "Media & Entertainment", "Professional & Commercial Services"],
+        "Technology & Communications": ["Hardware", "Internet Media & Services", "Semiconductors", "Software & IT Services", "Telecommunications Services"],
+        "Transportation": ["Air Freight & Logistics", "Airlines", "Automobiles", "Auto Parts", "Marine Transportation", "Rail Transportation", "Road Transportation"]
+    };
+
+    function updateIndustries() {
+        const sectorSelect = document.getElementById("id_sector");
+        if (!sectorSelect) return;
+        
+        const selectedSector = sectorSelect.value;
+        const validIndustries = industryMap[selectedSector] || [];
+        
+        const checkboxes = document.querySelectorAll('#id_industries input[type="checkbox"]');
+        
+        checkboxes.forEach(cb => {
+            const industryName = cb.value;
+            const wrapperDiv = cb.closest('div'); 
+            
+            if (validIndustries.includes(industryName)) {
+                wrapperDiv.style.display = 'block'; 
+            } else {
+                wrapperDiv.style.display = 'none';  
+                cb.checked = false;                 
+            }
+        });
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+        updateIndustries();
+        const sectorSelect = document.getElementById("id_sector");
+        if (sectorSelect) {
+            sectorSelect.addEventListener('change', updateIndustries);
+        }
+    });
+</script>
+
+</body>
+</html>

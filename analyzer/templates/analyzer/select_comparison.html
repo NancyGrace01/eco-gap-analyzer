@@ -1,0 +1,270 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Compare Reports | Eco Gap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s ease, color 0.3s ease; }
+        
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 900; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .card-glass { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; box-shadow: 0 4px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; margin: auto; }
+        
+        .form-select, .form-control { background: rgba(128,128,128,0.1) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; padding: 12px; border-radius: 8px; }
+        .form-select:focus, .form-control:focus { box-shadow: none; border-color: #198754 !important; }
+        .btn-brand { background: #198754; color: white; border: none; font-weight: 600; padding: 14px; border-radius: 8px; transition: all 0.3s; }
+        .btn-brand:hover { background: #146c43; color: white; }
+        
+        .nav-tabs .nav-link { color: var(--text-muted); font-weight: 600; border: none; border-bottom: 2px solid transparent; padding: 15px 20px; transition: all 0.3s; }
+        .nav-tabs .nav-link:hover { color: var(--text-main); border-color: var(--border-color); }
+        .nav-tabs .nav-link.active { background: transparent; color: #20c997; border-color: #20c997; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary text-theme-main rounded-pill px-3 fw-bold border-theme d-none d-md-block">Dashboard</a>
+        
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+
+        <a href="{% url 'profile' %}" class="text-decoration-none">
+            <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                {{ user.username|slice:":2"|upper|default:"AD" }}
+            </div>
+        </a>
+
+        <form action="{% url 'logout' %}" method="post" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if messages %}
+<div class="container mb-3" style="max-width: 650px;">
+    {% for message in messages %}
+    <div class="alert alert-danger border-danger border-opacity-50 text-white shadow-lg" style="background: rgba(220, 53, 69, 0.1);">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="container flex-grow-1 d-flex align-items-center justify-content-center pb-5">
+    <div class="card-glass p-0 overflow-hidden">
+        
+        <!-- Dual Tabs -->
+        <ul class="nav nav-tabs nav-fill border-bottom border-theme" id="compareTab">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#yoy">YoY Delta (Internal)</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#cross">Cross-Company (Peers)</button>
+            </li>
+        </ul>
+
+        <div class="tab-content p-4 p-md-5">
+            
+            <!-- TAB 1: YoY Comparison -->
+            <div class="tab-pane fade show active" id="yoy">
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-timeline text-success fs-1 mb-3"></i>
+                    <h4 class="fw-bold text-theme-main">Year-over-Year Progression</h4>
+                    <p class="text-theme-muted small">Upload a new PDF or select an existing report to analyze progression, regression, and stagnant gaps.</p>
+                </div>
+                <form method="post" action="{% url 'compare_reports' %}" class="analysis-form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="compare_type" value="yoy"> 
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold text-theme-muted">Base Year Report (Older)</label>
+                        <div class="d-flex flex-column gap-2">
+                            <select name="base_report" class="form-select">
+                                <option value="" selected>-- Select Existing --</option>
+                                {% for report in reports %}
+                                    <option value="{{ report.id }}">{{ report.document.name|slice:"11:" }} ({{ report.created_at|date:"M d" }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <hr class="flex-grow-1 border-theme">
+                                <span class="text-theme-muted small fw-bold text-uppercase">OR UPLOAD NEW</span>
+                                <hr class="flex-grow-1 border-theme">
+                            </div>
+                            <input type="file" name="base_report_file" class="form-control" accept=".pdf">
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label text-uppercase small fw-bold text-theme-muted">New Year Report (Recent)</label>
+                        <div class="d-flex flex-column gap-2">
+                            <select name="new_report" class="form-select">
+                                <option value="" selected>-- Select Existing --</option>
+                                {% for report in reports %}
+                                    <option value="{{ report.id }}">{{ report.document.name|slice:"11:" }} ({{ report.created_at|date:"M d" }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <hr class="flex-grow-1 border-theme">
+                                <span class="text-theme-muted small fw-bold text-uppercase">OR UPLOAD NEW</span>
+                                <hr class="flex-grow-1 border-theme">
+                            </div>
+                            <input type="file" name="new_report_file" class="form-control" accept=".pdf">
+                        </div>
+                    </div>
+                    <button type="submit" id="yoyBtn" class="btn btn-brand w-100">
+                        <i class="fa-solid fa-microchip me-2"></i> Run YoY Analysis
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 2: Cross-Company Comparison -->
+            <div class="tab-pane fade" id="cross">
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-scale-balanced text-info fs-1 mb-3"></i>
+                    <h4 class="fw-bold text-theme-main">Peer Benchmarking</h4>
+                    <p class="text-theme-muted small">Upload a new PDF or select existing reports from <strong class="text-theme-main">two different companies</strong> to identify leaders and laggards.</p>
+                </div>
+                <form method="post" action="{% url 'compare_reports' %}" class="analysis-form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="compare_type" value="cross"> 
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold text-info">Document 1</label>
+                        <div class="d-flex flex-column gap-2">
+                            <select name="base_report" class="form-select">
+                                <option value="" selected>-- Select Existing --</option>
+                                {% for report in reports %}
+                                    <option value="{{ report.id }}">{{ report.document.name|slice:"11:" }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <hr class="flex-grow-1 border-theme">
+                                <span class="text-theme-muted small fw-bold text-uppercase">OR UPLOAD NEW</span>
+                                <hr class="flex-grow-1 border-theme">
+                            </div>
+                            <input type="file" name="base_report_file" class="form-control" accept=".pdf">
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label text-uppercase small fw-bold text-info">Document 2</label>
+                        <div class="d-flex flex-column gap-2">
+                            <select name="new_report" class="form-select">
+                                <option value="" selected>-- Select Existing --</option>
+                                {% for report in reports %}
+                                    <option value="{{ report.id }}">{{ report.document.name|slice:"11:" }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="d-flex align-items-center gap-2">
+                                <hr class="flex-grow-1 border-theme">
+                                <span class="text-theme-muted small fw-bold text-uppercase">OR UPLOAD NEW</span>
+                                <hr class="flex-grow-1 border-theme">
+                            </div>
+                            <input type="file" name="new_report_file" class="form-control" accept=".pdf">
+                        </div>
+                    </div>
+                    <button type="submit" id="crossBtn" class="btn btn-info w-100 fw-bold text-dark">
+                        <i class="fa-solid fa-satellite-dish me-2"></i> Run Peer Benchmark
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        const htmlElement = document.documentElement;
+        const icon = themeBtn.querySelector('i');
+        const text = themeBtn.querySelector('span');
+
+        const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+        setTheme(savedTheme);
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        function setTheme(theme) {
+            htmlElement.setAttribute('data-theme', theme);
+            localStorage.setItem('ecogap-theme', theme);
+            
+            if (theme === 'light') {
+                icon.className = 'fa-solid fa-sun text-warning';
+                if(text) text.textContent = 'Light Mode';
+            } else {
+                icon.className = 'fa-solid fa-moon';
+                if(text) text.textContent = 'Dark Mode';
+            }
+        }
+        
+        // AI Loading State
+        const forms = document.querySelectorAll('form.analysis-form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const btn = form.querySelector('button[type="submit"]');
+                setTimeout(() => {
+                    btn.disabled = true;
+                    if (btn.id === 'yoyBtn') {
+                        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Analyzing YoY Delta...';
+                    } else if (btn.id === 'crossBtn') {
+                        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i> Running Benchmark...';
+                    }
+                    btn.classList.add('opacity-75');
+                }, 10);
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

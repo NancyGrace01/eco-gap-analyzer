@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile | Eco Gap Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --bg-card-hover: rgba(255, 255, 255, 0.05);
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body { 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; 
+            padding-bottom: 40px; 
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* Universal Topbar */
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        .glass-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 24px; transition: 0.3s; }
+        .section-title { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; }
+        .data-label { color: #10b981; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
+        .data-value { color: var(--text-main); font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; }
+        .industry-badge { background: rgba(25, 135, 84, 0.1); color: #20c997; border: 1px solid rgba(32, 201, 151, 0.2); font-weight: 500; }
+        .member-row { border-bottom: 1px solid var(--border-color); padding: 15px 0; display: flex; align-items: center; gap: 15px; }
+        .member-row:last-child { border-bottom: none; }
+        .avatar-circle { width: 40px; height: 40px; background: rgba(128,128,128,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+        .btn-brand { background: #198754; color: white; border: none; font-weight: 500; }
+        .btn-brand:hover { background: #146c43; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="topbar mb-5">
+    <div class="d-flex align-items-center gap-3">
+        <a class="navbar-brand fw-bold text-theme-main text-uppercase text-decoration-none fs-5" href="/">
+            <i class="fa-solid fa-leaf text-success me-2"></i> 
+            {% if user.is_authenticated and user.profile.company %}
+                {{ user.profile.company.name }} <span class="text-theme-muted fs-6 ms-2 text-capitalize fw-normal">| Eco Gap</span>
+            {% else %}
+                ECO GAP ANALYZER
+            {% endif %}
+        </a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated and user.profile.company %}
+        <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 shadow-sm d-none d-md-block" data-bs-toggle="modal" data-bs-target="#inviteModal">
+            <i class="fa-solid fa-user-plus me-1"></i> Invite Team
+        </button>
+        {% endif %}
+        
+        <button class="theme-toggle" id="themeToggleBtn">
+            <i class="fa-solid fa-moon"></i> <span class="d-none d-sm-inline">Dark Mode</span>
+        </button>
+
+        <a href="{% url 'profile' %}" class="text-decoration-none">
+            <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                {{ user.username|slice:":2"|upper|default:"AD" }}
+            </div>
+        </a>
+
+        <form action="{% url 'logout' %}" method="post" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger border-0 rounded-circle" style="width: 40px; height: 40px;" title="Log Out">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="container max-w-4xl" style="max-width: 900px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-theme-main mb-0"><i class="fa-solid fa-id-badge text-success me-2"></i> Workspace Profile</h2>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary text-theme-main border-theme rounded-pill px-4"><i class="fa-solid fa-arrow-left me-2"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="glass-panel text-center">
+                <div class="avatar-circle mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem; background: rgba(25, 135, 84, 0.1); color: #198754;">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <h4 class="text-theme-main fw-bold">{{ user.username }}</h4>
+                <p class="text-theme-muted mb-4">{{ user.email }}</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <span class="badge bg-secondary bg-opacity-25 text-theme-main border-theme fw-normal px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i> Joined {{ user.date_joined|date:"M Y" }}</span>
+                </div>
+            </div>
+            
+            <div class="glass-panel">
+                <div class="d-flex justify-content-between align-items-baseline section-title border-bottom border-theme pb-2 mb-3">
+                    <h6 class="mb-0 text-uppercase text-theme-muted" style="letter-spacing: 1px;">Company Profile</h6>
+                    {% if company %}
+                        <a href="{% url 'edit_profile' %}" class="btn btn-sm btn-outline-success rounded-pill px-3" style="font-size: 0.75rem;"><i class="fa-solid fa-pen me-1"></i> Edit</a>
+                    {% endif %}
+                </div>
+                {% if company %}
+                    <div class="data-label">Organization Name</div>
+                    <div class="data-value">{{ company.name }}</div>
+                    
+                    <div class="data-label">Primary Sector</div>
+                    <div class="data-value">{{ company.sector|default:"Not specified" }}</div>
+                    
+                    <div class="data-label">Selected Industries</div>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        {% for industry in company.industries %}
+                            <span class="badge industry-badge rounded-pill px-3 py-2">{{ industry }}</span>
+                        {% empty %}
+                            <span class="text-theme-muted small">No industries selected.</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-theme-muted text-center py-3">No company associated with this account.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="glass-panel h-100">
+                <div class="d-flex justify-content-between align-items-center border-bottom border-theme pb-3 mb-3">
+                    <h6 class="section-title border-0 mb-0">Workspace Colleagues</h6>
+                    <span class="badge bg-success rounded-pill px-3">{{ team_members|length }} Members</span>
+                </div>
+                
+                <div class="team-list">
+                    {% for member in team_members %}
+                        <div class="member-row">
+                            <div class="avatar-circle">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-theme-main fw-medium">
+                                    {{ member.user.username }}
+                                    {% if member.user == request.user %}
+                                        <span class="badge bg-info text-dark ms-2 rounded-pill" style="font-size: 0.7rem;">You</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-theme-muted small">{{ member.user.email }}</div>
+                            </div>
+                            <div class="text-theme-muted small text-end">
+                                Joined<br>{{ member.user.date_joined|date:"M d, Y" }}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center text-theme-muted py-5">
+                            <i class="fa-solid fa-users-slash fs-3 mb-3"></i>
+                            <p>You are the only member in this workspace.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div class="modal fade" id="inviteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-theme-card border-theme" style="border-radius: 16px;">
+            <div class="modal-header border-bottom border-theme">
+                <h5 class="modal-title fw-bold text-theme-main"><i class="fa-solid fa-envelope-open-text text-info me-2"></i> Invite to Workspace</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'invite_team_member' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="text-theme-muted small mb-4">Send an invitation link to a colleague to join the <strong>{{ user.profile.company.name }}</strong> workspace.</p>
+                    <div class="mb-3">
+                        <label class="form-label text-uppercase small fw-bold text-info">Email Address</label>
+                        <input type="email" name="email" class="form-control" style="background: rgba(0,0,0,0.1); border: 1px solid var(--border-color); color: var(--text-main);" placeholder="colleague@company.com" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-theme">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 text-theme-main" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info fw-bold rounded-pill px-4 text-dark">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Theme Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeBtn = document.getElementById('themeToggleBtn');
+        const htmlElement = document.documentElement;
+        const icon = themeBtn.querySelector('i');
+        const text = themeBtn.querySelector('span');
+
+        const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+        setTheme(savedTheme);
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        function setTheme(theme) {
+            htmlElement.setAttribute('data-theme', theme);
+            localStorage.setItem('ecogap-theme', theme);
+            
+            const closeBtns = document.querySelectorAll('.btn-close');
+            
+            if (theme === 'light') {
+                icon.className = 'fa-solid fa-sun text-warning';
+                if(text) text.textContent = 'Light Mode';
+                closeBtns.forEach(btn => btn.classList.remove('btn-close-white'));
+            } else {
+                icon.className = 'fa-solid fa-moon';
+                if(text) text.textContent = 'Dark Mode';
+                closeBtns.forEach(btn => btn.classList.add('btn-close-white'));
+            }
+        }
+    });
+</script>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+</body>
+</html>

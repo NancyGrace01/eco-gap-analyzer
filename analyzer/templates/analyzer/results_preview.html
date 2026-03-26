@@ -1,0 +1,1031 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Results | Eco Gap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root[data-theme="dark"] {
+            --bg-main: radial-gradient(circle at top left, #101827, #06090f 40%, #000000 100%);
+            --bg-sidebar: rgba(10, 15, 25, 0.95);
+            --bg-card: rgba(20, 25, 35, 0.6);
+            --bg-card-hover: rgba(30, 41, 59, 0.8);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --border-highlight: rgba(16, 185, 129, 0.3);
+            --chart-grid: rgba(255,255,255,0.05);
+            --nav-active-bg: rgba(16, 185, 129, 0.15);
+            --nav-active-color: #10b981;
+        }
+        
+        :root[data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-sidebar: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --border-highlight: rgba(16, 185, 129, 0.5);
+            --chart-grid: rgba(0,0,0,0.05);
+            --nav-active-bg: rgba(16, 185, 129, 0.1);
+            --nav-active-color: #059669;
+        }
+
+        body { 
+            background: var(--bg-main);
+            color: var(--text-main); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            min-height: 100vh; 
+            overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .text-theme-main { color: var(--text-main) !important; }
+        .text-theme-muted { color: var(--text-muted) !important; }
+        .border-theme { border-color: var(--border-color) !important; }
+        .bg-theme-card { background: var(--bg-card) !important; }
+
+        /* ================= SIDEBAR & LAYOUT ================= */
+        .wrapper { display: flex; width: 100%; align-items: stretch; }
+        
+        #sidebar {
+            min-width: 280px;
+            max-width: 280px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            transition: all 0.3s;
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            min-height: 100vh;
+        }
+        
+        #sidebar.collapsed { margin-left: -280px; }
+
+        .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;}
+        
+        #sidebar ul.components { padding: 20px 0; }
+        #sidebar ul p { padding: 10px; }
+        #sidebar ul li > a {
+            padding: 12px 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        #sidebar ul li > a:hover { color: var(--nav-active-color); background: var(--bg-card-hover); }
+        #sidebar ul li > a i { margin-right: 10px; width: 20px; text-align: center; }
+        
+        #sidebar ul li > a[aria-expanded="true"] { color: var(--text-main); background: var(--bg-card-hover); border-left: 4px solid var(--nav-active-color); }
+        
+        #sidebar ul ul a { font-size: 0.85rem !important; padding-left: 55px !important; font-weight: 500; }
+        #sidebar ul ul a.active { color: var(--nav-active-color); background: var(--bg-card); position: relative; }
+        #sidebar ul ul a.active::before { content: ''; position: absolute; left: 24px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: var(--nav-active-color); }
+
+        .dropdown-toggle::after { display: block; position: absolute; top: 50%; right: 20px; transform: translateY(-50%); }
+
+        /* ================= MAIN CONTENT & TOPBAR ================= */
+        #content { width: 100%; transition: all 0.3s; display: flex; flex-direction: column; }
+        
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .hamburger-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: 0.2s;}
+        .hamburger-btn:hover { background: var(--bg-card-hover); }
+
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .theme-toggle:hover { border-color: #10b981; color: #10b981; }
+
+        /* ================= DASHBOARD COMPONENTS ================= */
+        .card-glass { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            padding: 24px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
+            margin-bottom: 24px;
+        }
+        
+        .table-custom { --bs-table-bg: transparent; --bs-table-color: var(--text-main); margin-bottom: 0; }
+        .table-custom th { border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px; }
+        .table-custom td { border-bottom: 1px solid var(--border-color); padding: 16px; vertical-align: middle; }
+        .table-custom tbody tr:hover td { background: var(--bg-card-hover) !important; }
+
+        .scoring-btn { border-bottom: 1px dashed var(--border-highlight); color: var(--text-main); transition: all 0.2s; cursor: pointer; text-decoration: none; }
+        .scoring-btn:hover { color: #34d399 !important; border-bottom: 1px solid #34d399; }
+
+        .modal-content { background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 20px; color: var(--text-main); }
+        .evidence-box { background: var(--bg-card-hover); border-left: 4px solid #10b981; padding: 16px; border-radius: 4px; font-style: italic; color: var(--text-muted); }
+
+        /* Paywall */
+        .paywall-container { position: relative; max-height: 480px; overflow: hidden; }
+        .paywall-fade { position: absolute; bottom: 0; left: 0; right: 0; height: 300px; background: linear-gradient(to bottom, transparent, var(--bg-sidebar)); z-index: 5; pointer-events: none; }
+        .paywall-action { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; width: 100%; }
+
+        /* Gap Analysis Summary & Graph */
+        .summary-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        .summary-table th { color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; padding: 15px; border: none; background: var(--bg-card-hover); }
+        .summary-table td { background: var(--bg-card); padding: 20px; border: 1px solid var(--border-color); vertical-align: middle;}
+        .summary-table tr td:first-child { border-radius: 12px 0 0 12px; border-right: none;}
+        .summary-table tr td:nth-child(2), .summary-table tr td:nth-child(3) { border-left: none; border-right: none; }
+        .summary-table tr td:last-child { border-radius: 0 12px 12px 0; border-left: none; }
+        .summary-table .header-row th:first-child { border-radius: 12px 0 0 12px; }
+        .summary-table .header-row th:last-child { border-radius: 0 12px 12px 0; }
+        .perf-graph-container { background: var(--bg-card-hover); height: 36px; border-radius: 18px; position: relative; overflow: hidden; border: 1px solid var(--border-color); }
+        .perf-bar { height: 100%; transition: width 1s ease-in-out; border-radius: 18px 0 0 18px; }
+
+        /* Risk Tabs */
+        .risk-tabs .nav-link { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 50px; padding: 8px 20px; font-size: 0.85rem; transition: all 0.3s; margin-right: 8px; margin-bottom: 8px; cursor: pointer;}
+        .risk-tabs .nav-link.active { background: var(--nav-active-bg); color: var(--nav-active-color); border-color: var(--nav-active-color); }
+
+        /* Back to Top Button */
+        .back-to-top-btn {
+            position: fixed;
+            bottom: 105px;
+            right: 35px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--nav-active-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-to-top-btn.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .back-to-top-btn:hover {
+            transform: translateY(-5px);
+            background-color: #047857;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <!-- ================= SIDEBAR ================= -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h4 class="fw-bold text-theme-main mb-0"><i class="fa-solid fa-leaf text-success me-2"></i>Eco Gap</h4>
+        </div>
+
+        <ul class="list-unstyled components">
+            <li>
+                <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house"></i> Dashboard</a>
+            </li>
+            
+            <p class="text-uppercase small fw-bold text-theme-muted mt-3 px-3 mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">Frameworks</p>
+            
+            {% regroup report.layers.all by standard as standard_list %}
+            
+            <ul class="nav flex-column nav-pills w-100 m-0 p-0" id="sidebar-tab" role="tablist">
+                {% for standard in standard_list %}
+                <li class="nav-item w-100">
+                    <a href="#stdMenu-{{ standard.grouper|slugify }}" data-bs-toggle="collapse" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" class="dropdown-toggle">
+                        <i class="fa-solid fa-folder-open"></i> {{ standard.grouper }}
+                    </a>
+                    <ul class="collapse list-unstyled {% if forloop.first %}show{% endif %}" id="stdMenu-{{ standard.grouper|slugify }}">
+                        {% for layer in standard.list %}
+                        <li class="nav-item w-100">
+                            <a class="nav-link w-100 text-start {% if forloop.parentloop.first and forloop.first %}active{% endif %}" 
+                               id="tab-{{ layer.id }}" 
+                               data-bs-toggle="tab" 
+                               data-bs-target="#layer-pane-{{ layer.id }}" 
+                               type="button" 
+                               role="tab" 
+                               aria-controls="layer-pane-{{ layer.id }}" 
+                               aria-selected="{% if forloop.parentloop.first and forloop.first %}true{% else %}false{% endif %}">
+                                <!-- Ensure Thematic maps gracefully to Contextual Analysis in UI -->
+                                {% if 'Thematic' in layer.layer_type or 'Contextual' in layer.layer_type %}Contextual Analysis{% else %}{{ layer.layer_type }}{% endif %}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <p class="text-uppercase small fw-bold text-theme-muted mt-4 px-3 mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">Tools & Settings</p>
+            <li><a href="{% url 'compare_reports' %}"><i class="fa-solid fa-code-compare"></i> Compare Documents</a></li>
+            <li><a href="{% url 'xbrl_upload' %}"><i class="fa-solid fa-file-code"></i> XBRL Validation</a></li>
+            <li><a href="{% url 'upload_document' %}"><i class="fa-solid fa-file-pdf me-2"></i> New Scan </a></li>
+        </ul>
+    </nav>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <div id="content">
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" id="sidebarCollapse" class="hamburger-btn">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="d-none d-md-block">
+                    <span class="badge bg-theme-card text-theme-muted border border-theme rounded-pill px-3 py-2 fw-medium">
+                        <i class="fa-solid fa-file-pdf text-danger me-2"></i> {{ report.document.name|slice:"11:" }}
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <button class="theme-toggle" id="themeToggleBtn">
+                    <i class="fa-solid fa-moon"></i> <span>Dark Mode</span>
+                </button>
+                <a href="{% url 'profile' %}" class="text-decoration-none">
+                    <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-weight: bold;" title="Workspace Profile">
+                        {{ user.username|slice:":2"|upper|default:"AD" }}
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD AREA -->
+        <div class="container-fluid p-4 p-lg-5">
+            
+            <div class="tab-content" id="analysisTabContent">
+                {% for standard in standard_list %}
+                    {% for layer in standard.list %}
+                    <div class="tab-pane fade {% if forloop.parentloop.first and forloop.first %}show active{% endif %}" id="layer-pane-{{ layer.id }}" role="tabpanel" aria-labelledby="tab-{{ layer.id }}">
+                        
+                        <!-- Header -->
+                        <div class="d-flex justify-content-between align-items-end mb-4">
+                            <div>
+                                <h3 class="fw-bold mb-1 text-theme-main">{% if 'Thematic' in layer.layer_type or 'Contextual' in layer.layer_type %}Contextual Analysis{% else %}{{ layer.layer_type }}{% endif %}</h3>
+                                <p class="text-theme-muted mb-0">{{ standard.grouper }} Framework | Analyzed for <span class="fw-bold">{{ user.profile.company.name|default:"General Industry" }}</span></p>
+                            </div>
+                            {% if is_premium %}
+                                <a href="{% url 'export_layer_pdf' layer.id %}" target="_blank" class="btn btn-outline-info rounded-pill px-4">
+                                    <i class="fa-solid fa-file-export me-2"></i> Export Report
+                                </a>
+                            {% else %}
+                                <a href="{% url 'pricing' %}" class="btn btn-outline-warning text-warning rounded-pill px-4">
+                                    <i class="fa-solid fa-lock me-2"></i> Unlock Export
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- DYNAMIC LINE CHART FOR ALL LAYERS EXCEPT GAP ANALYSIS -->
+                        {% if "Gap Analysis" not in layer.layer_type %}
+                            <div id="data-hook-{{ layer.id }}" class="d-none">
+                                {% for finding in layer.findings.all|dictsortreversed:"status" %}
+                                    <!-- Skip automated failure rows to keep chart clean -->
+                                    {% if "automated failure" not in finding.details|lower and "automated scan" not in finding.details|lower %}
+                                        <span class="finding-data" data-item="{{ finding.item|force_escape }}" data-status="{{ finding.status|force_escape }}"></span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- COMPREHENSIVE ANALYSIS CHART -->
+                            <div class="card-glass p-4 mb-4">
+                                <h6 class="text-theme-muted small fw-bold text-uppercase mb-4"><i class="fa-solid fa-chart-area text-info me-2"></i> Comprehensive Analysis Trend</h6>
+                                <div style="height: 300px; width: 100%; position: relative;">
+                                    <canvas id="layer-chart-{{ layer.id }}"></canvas>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- LAYER SPECIFIC DASHBOARDS -->
+                        
+                        {% if "Gap Analysis" in layer.layer_type %}
+                            <!-- DASHBOARD: GAP ANALYSIS (SUMMARY) -->
+                            <div class="card-glass p-4 mb-4">
+                                <h5 class="fw-bold mb-4 text-theme-main">Executive Summary Performance</h5>
+                                <div class="table-responsive mb-5">
+                                    <table class="summary-table">
+                                        <thead>
+                                            <tr class="text-theme-muted" style="font-size: 0.75rem;">
+                                                <th style="width: 40%; text-align: left; border-radius: 12px 0 0 12px; padding-left: 20px;">Analysis</th>
+                                                <th class="text-center" style="width: 20%;">Total Score / Frequency</th>
+                                                <th class="text-center" style="width: 20%;">% of Total Score</th>
+                                                <th class="text-center" style="width: 20%; border-radius: 0 12px 12px 0;">Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for finding in layer.findings.all|dictsortreversed:"status" %}
+                                            <tr>
+                                                <td class="fw-bold fs-6 text-theme-main" style="padding-left: 20px;">{{ finding.item }}</td>
+                                                <td class="text-center text-info fs-5 fw-bold">{{ finding.page_number|default:"0" }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary bg-opacity-25 text-white border border-secondary px-3 py-2 fs-6">
+                                                        {{ finding.section_name|default:"0" }}%
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    {% if 'Unmet' in finding.status %}
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 fs-6 rounded-pill">Unmet</span>
+                                                    {% elif 'Partially Met' in finding.status %}
+                                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-3 py-2 fs-6 rounded-pill">Partially Met</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 fs-6 rounded-pill">Met</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <h6 class="text-theme-muted small fw-bold text-uppercase mb-4" style="letter-spacing: 1px;">Visual Performance Index (0-80 Scale)</h6>
+                                {% for finding in layer.findings.all|dictsortreversed:"status" %}
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between mb-2 px-1">
+                                        <span class="small fw-medium text-theme-main">{{ finding.item }}</span>
+                                        <span class="small fw-bold text-theme-main">Score: {{ finding.page_number|default:"0" }}</span>
+                                    </div>
+                                    <div class="perf-graph-container">
+                                        <div class="perf-bar" 
+                                             style="width: {% widthratio finding.page_number|default:'0' 80 100 %}%; max-width: 100%;
+                                                    background: {% if finding.page_number|add:0 <= 25 %}linear-gradient(90deg, #dc2626, #ef4444){% elif finding.page_number|add:0 <= 50 %}linear-gradient(90deg, #d97706, #f59e0b){% else %}linear-gradient(90deg, #059669, #10b981){% endif %};">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                <div class="d-flex justify-content-between text-theme-muted mt-2 px-2" style="font-size: 0.65rem; font-weight: bold;">
+                                    <span>0 <span class="text-danger ms-1">(UNMET)</span></span>
+                                    <span>25 <span class="text-danger ms-1">(RED)</span></span>
+                                    <span>50 <span class="text-warning ms-1">(YELLOW)</span></span>
+                                    <span>80 <span class="text-success ms-1">(GREEN)</span></span>
+                                </div>
+                            </div>
+
+                        {% elif "Risk Analysis" in layer.layer_type %}
+                            <!-- DASHBOARD: RISK ANALYSIS -->
+                            <div class="card-glass p-0 overflow-hidden mb-4">
+                                <div class="p-4 border-bottom border-secondary border-opacity-25 bg-danger bg-opacity-10 d-flex align-items-center gap-3">
+                                    <div class="kpi-icon text-danger fs-3"><i class="fa-solid fa-shield-halved"></i></div>
+                                    <div>
+                                        <h5 class="fw-bold mb-1 text-danger">Sector Risk Profile</h5>
+                                        <p class="text-danger opacity-75 mb-0 small">Sector: <span class="fw-bold">{{ user.profile.company.sector|default:"General Sector" }}</span></p>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-custom align-middle">
+                                        <thead class="bg-theme-card">
+                                            <tr>
+                                                <th style="width: 30%;">Risk Category / Requirement</th>
+                                                <th style="width: 15%;">Status</th>
+                                                <th style="width: 45%;">Analysis Details</th>
+                                                <th style="width: 10%;" class="text-end">Evidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for finding in layer.findings.all|dictsortreversed:"status" %}
+                                            <tr>
+                                                <td class="fw-medium text-theme-main">
+                                                    <a href="#" class="scoring-btn" data-bs-toggle="modal" data-bs-target="#scoringModal" 
+                                                       data-item="{{ finding.item|force_escape }}" 
+                                                       data-breakdown="{{ finding.status_breakdown|force_escape }}" 
+                                                       data-status="{{ finding.status|force_escape }}" 
+                                                       data-layertype="Risk Analysis">
+                                                        {{ finding.item }} <i class="fa-solid fa-arrow-pointer ms-1 small text-success opacity-75"></i>
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    {% if 'Unmet' in finding.status %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2 py-1">Unmet</span>
+                                                    {% elif 'Partially Met' in finding.status %}<span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-2 py-1">Partially Met</span>
+                                                    {% else %}<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1">Met</span>{% endif %}
+                                                </td>
+                                                <td class="text-theme-muted small">{{ finding.details }}</td>
+                                                <td class="text-end">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#evidenceModal" 
+                                                            data-item="{{ finding.item|force_escape }}" 
+                                                            data-status="{{ finding.status|force_escape }}" 
+                                                            data-page="{{ finding.page_number|force_escape }}" 
+                                                            data-section="{{ finding.section_name|force_escape }}" 
+                                                            data-excerpt="{{ finding.raw_excerpt|force_escape }}" 
+                                                            data-details="{{ finding.details|force_escape }}">Inspect</button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        {% elif "Gap Prioritization" in layer.layer_type %}
+                            <!-- DASHBOARD: GAP PRIORITIZATION -->
+                            <div class="card-glass p-0 overflow-hidden mb-4">
+                                <div class="p-4 bg-danger bg-opacity-10 border-bottom border-danger border-opacity-25">
+                                    <h5 class="fw-bold text-danger mb-1"><i class="fa-solid fa-triangle-exclamation me-2"></i> Critical Gaps Identified</h5>
+                                    <p class="text-danger opacity-75 small mb-0">Prioritized missing or weak disclosures requiring immediate remediation.</p>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-custom align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 10%;">Metric Code</th>
+                                                <th style="width: 20%;">Disclosure Name</th>
+                                                <th style="width: 10%;">Status</th>
+                                                <th style="width: 15%;">Gap Classification</th>
+                                                <th style="width: 25%;">Context & Details</th>
+                                                <th style="width: 20%;">Recommendation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for finding in layer.findings.all|dictsortreversed:"status" %}
+                                            <tr>
+                                                <td class="fw-bold text-danger">{{ finding.code }}</td>
+                                                <td class="fw-bold text-theme-main">
+                                                    <a href="#" class="scoring-btn" data-bs-toggle="modal" data-bs-target="#scoringModal" 
+                                                       data-item="{{ finding.item|force_escape }}" 
+                                                       data-breakdown="{{ finding.status_breakdown|force_escape }}" 
+                                                       data-status="{{ finding.status|force_escape }}" 
+                                                       data-layertype="{{ layer.layer_type|force_escape }}">
+                                                        {{ finding.item }} <i class="fa-solid fa-arrow-pointer ms-1 small text-success opacity-75"></i>
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    {% if 'Unmet' in finding.status %}<span class="badge bg-danger text-white rounded-pill px-2 py-1">Unmet</span>
+                                                    {% else %}<span class="badge bg-warning text-dark rounded-pill px-2 py-1">Partially Met</span>{% endif %}
+                                                </td>
+                                                <td class="small fw-medium text-warning">{{ finding.section_name }}</td>
+                                                <td class="small text-theme-main">{{ finding.details }}</td>
+                                                <td class="text-info small fw-medium">{{ finding.recommendation }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="6" class="text-center text-theme-muted py-4">No critical gaps identified.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        {% else %}
+                            <!-- DASHBOARD: STANDARD ANALYSIS (Keywords, Context, Quality/Maturity) -->
+
+                            <!-- Standard Data Table with Dynamic Headers -->
+                            <div class="card-glass p-0 overflow-hidden">
+                                {% if not is_premium and layer.findings.all|length > 4 %}
+                                    <div class="paywall-container">
+                                {% else %}
+                                    <div class="table-responsive">
+                                {% endif %}
+                                    <table class="table table-custom align-middle">
+                                        <thead class="bg-theme-card border-bottom border-theme">
+                                            <tr>
+                                                {% if "Quality" in layer.layer_type or "Maturity" in layer.layer_type %}
+                                                    <th style="width: 20%;">Reporting Principles</th>
+                                                    <th style="width: 10%;">Status</th>
+                                                    <th style="width: 30%;">Context & Details</th>
+                                                    <th style="width: 30%;">Recommendation</th>
+                                                    <th style="width: 10%;" class="text-end">Evidence</th>
+                                                {% else %}
+                                                    <th style="width: 10%;">Code</th>
+                                                    <th style="width: 15%;">Disclosure Name</th>
+                                                    <th style="width: 25%;">Requirement</th>
+                                                    <th style="width: 10%;">Status</th>
+                                                    <th style="width: 20%;">Context & Details</th>
+                                                    <th style="width: 15%;">Recommendation</th>
+                                                    <th style="width: 5%;" class="text-end">Evidence</th>
+                                                {% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for finding in layer.findings.all|dictsortreversed:"status" %}
+                                            
+                                                {% if "Quality" in layer.layer_type or "Maturity" in layer.layer_type %}
+                                                    <!-- QUALITY / MATURITY LAYOUT -->
+                                                    <tr>
+                                                        <td class="fw-medium text-theme-main">
+                                                            <a href="#" class="scoring-btn" data-bs-toggle="modal" data-bs-target="#scoringModal" 
+                                                               data-item="{{ finding.item|force_escape }}" 
+                                                               data-breakdown="{{ finding.status_breakdown|force_escape }}" 
+                                                               data-status="{{ finding.status|force_escape }}" 
+                                                               data-layertype="{{ layer.layer_type|force_escape }}">
+                                                                {{ finding.item }} <i class="fa-solid fa-arrow-pointer ms-1 small text-success opacity-75"></i>
+                                                            </a>
+                                                        </td>
+                                                        <td>
+                                                            {% if 'Unmet' in finding.status %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2 py-1">Unmet</span>
+                                                            {% elif 'Partially Met' in finding.status %}<span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-2 py-1">Partially Met</span>
+                                                            {% else %}<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1">Met</span>{% endif %}
+                                                        </td>
+                                                        <td class="text-theme-muted small">{{ finding.details|truncatechars:120 }}</td>
+                                                        <td class="text-info small fw-medium">{{ finding.recommendation|default:"-"|truncatechars:80 }}</td>
+                                                        <td class="text-end">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#evidenceModal" 
+                                                                    data-item="{{ finding.item|force_escape }}" data-status="{{ finding.status|force_escape }}" 
+                                                                    data-page="{{ finding.page_number|force_escape }}" data-section="{{ finding.section_name|force_escape }}" 
+                                                                    data-excerpt="{{ finding.raw_excerpt|force_escape }}" data-details="{{ finding.details|force_escape }}">Inspect</button>
+                                                        </td>
+                                                    </tr>
+                                                {% else %}
+                                                    <!-- KEYWORDS / CONTEXTUAL LAYOUT (WITH EVIDENCE COLUMN) -->
+                                                    <!-- Filter out any bad rows (N/A, automated failures) ensuring the valid ones show even if requirement is empty -->
+                                                    {% if finding.code and finding.code != "-" and finding.code != "N/A" %}
+                                                        {% if "automated failure" not in finding.details|lower and "automated scan" not in finding.details|lower %}
+                                                            <tr>
+                                                                <td class="fw-bold text-success">{{ finding.code }}</td>
+                                                                <td class="fw-bold text-theme-main">{{ finding.section_name }}</td>
+                                                                <td class="fw-medium text-theme-main">
+                                                                    <a href="#" class="scoring-btn" data-bs-toggle="modal" data-bs-target="#scoringModal" 
+                                                                       data-item="{{ finding.item|force_escape }}" 
+                                                                       data-breakdown="{{ finding.status_breakdown|force_escape }}" 
+                                                                       data-status="{{ finding.status|force_escape }}" 
+                                                                       data-page="{{ finding.page_number|force_escape }}"
+                                                                       data-layertype="{{ layer.layer_type|force_escape }}">
+                                                                        {{ finding.item|truncatechars:80 }} <i class="fa-solid fa-arrow-pointer ms-1 small text-success opacity-75"></i>
+                                                                    </a>
+                                                                </td>
+                                                                <td>
+                                                                    {% if 'Unmet' in finding.status %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2 py-1">Unmet</span>
+                                                                    {% elif 'Partially Met' in finding.status %}<span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-2 py-1">Partially Met</span>
+                                                                    {% else %}<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1">Met</span>{% endif %}
+                                                                </td>
+                                                                <td class="text-theme-muted small">{{ finding.details|truncatechars:100 }}</td>
+                                                                <td class="text-info small fw-medium">{{ finding.recommendation|default:"-"|truncatechars:60 }}</td>
+                                                                <td class="text-end">
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#evidenceModal" 
+                                                                            data-item="{{ finding.item|force_escape }}" data-status="{{ finding.status|force_escape }}" 
+                                                                            data-page="{{ finding.page_number|force_escape }}" data-section="{{ finding.section_name|force_escape }}" 
+                                                                            data-excerpt="{{ finding.raw_excerpt|force_escape }}" data-details="{{ finding.details|force_escape }}">Inspect</button>
+                                                                </td>
+                                                            </tr>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                                
+                                            {% empty %}
+                                                <tr><td colspan="7" class="text-center text-theme-muted py-4">No findings recorded.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+
+                                {% if not is_premium and layer.findings.all|length > 4 %}
+                                        <div class="paywall-fade"></div>
+                                        <div class="paywall-action">
+                                            <i class="fa-solid fa-lock text-warning fs-3 mb-2"></i>
+                                            <h5 class="text-theme-main fw-bold mb-3">Premium Content Hidden</h5>
+                                            <a href="{% url 'pricing' %}" class="btn btn-brand rounded-pill px-4 py-2 shadow-lg">Upgrade to View Full Report</a>
+                                        </div>
+                                    </div> 
+                                {% else %}
+                                    </div> 
+                                {% endif %}
+                            </div>
+
+                        {% endif %}
+
+                    </div> <!-- End Tab Pane -->
+                    {% endfor %}
+                {% endfor %}
+            </div>
+
+        </div> <!-- End Container Fluid -->
+    </div> <!-- End Content -->
+</div> <!-- End Wrapper -->
+
+
+<!-- ================= MODALS ================= -->
+
+<div class="modal fade" id="scoringModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-bottom border-theme px-4 py-3">
+                <h5 class="modal-title fw-bold text-theme-main"><i class="fa-solid fa-calculator text-success me-2"></i> Scoring Breakdown</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold text-info mb-0" id="scoreModalItemTitle">Requirement Details</h6>
+                    <div class="badge fs-6 rounded-pill px-4 py-2" id="scoreModalFinalStatusBadge">Status</div>
+                </div>
+                
+                <div class="table-responsive rounded border border-theme h-100">
+                    <table class="table table-custom align-middle mb-0">
+                        <thead class="bg-theme-card border-bottom border-theme">
+                            <tr>
+                                <th class="text-uppercase fw-bold pb-3 ps-3" id="scoreModalCol1" style="width: 35%;">KEYWORD / ELEMENT</th>
+                                <th class="text-center text-uppercase fw-bold pb-3" id="scoreModalCol2" style="width: 15%;">FREQUENCY</th>
+                                <th class="text-center text-uppercase fw-bold pb-3" id="scoreModalCol3" style="width: 15%;">PRESENCE</th>
+                                <th class="text-uppercase fw-bold pb-3" id="scoreModalCol4" style="width: 35%;">EVIDENCE MAPPING</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoreModalTableBody"></tbody>
+                        <tfoot class="border-top border-theme bg-theme-card">
+                            <tr>
+                                <td class="fw-bold py-2 ps-3 text-theme-main">Total <span id="scoreModalTotalLabel">Frequency</span></td>
+                                <td class="fw-bold text-info text-center fs-6 py-2" id="scoreModalTotalFreq">0</td>
+                                <td id="scoreModalTfootEmpty1" colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold py-2 ps-3 text-theme-main">Coverage (Total Presence)</td>
+                                <td class="fw-bold text-success text-center fs-6 py-2" id="scoreModalTotalPresence">0</td>
+                                <td id="scoreModalTfootEmpty2" colspan="2"></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold py-2 ps-3 text-theme-main">Coverage %</td>
+                                <td class="fw-bold text-warning text-center fs-6 py-2" id="scoreModalCoveragePct">0%</td>
+                                <td id="scoreModalTfootEmpty3" colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="evidenceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-bottom border-theme px-4 py-3">
+                <h5 class="modal-title fw-bold text-theme-main"><i class="fa-solid fa-microscope text-success me-2"></i> AI Evidence Inspection</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-theme-main" id="evidenceModalItemTitle">Requirement</h6>
+                    <span class="badge bg-secondary rounded-pill" id="evidenceModalStatusBadge">Status</span>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <small class="text-uppercase text-theme-muted fw-bold">Page Number</small>
+                        <div class="fs-5 fw-medium text-theme-main" id="modalPageNumber">N/A</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-uppercase text-theme-muted fw-bold">Document Section</small>
+                        <div class="fs-5 fw-medium text-theme-main" id="modalSectionName">N/A</div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <small class="text-uppercase text-theme-muted fw-bold">Extracted Evidence</small>
+                    <div class="evidence-box mt-2" id="modalRawExcerpt">"No specific excerpt could be identified."</div>
+                </div>
+                <div>
+                    <small class="text-uppercase text-theme-muted fw-bold">AI Context / Reasoning</small>
+                    <p class="mt-2 mb-0 text-theme-main" id="modalDetailsText">Context goes here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back to Top Button -->
+<button class="back-to-top-btn" id="backToTopBtn" title="Back to Top">
+    <i class="fa-solid fa-arrow-up"></i>
+</button>
+
+{% include 'analyzer/chatbot_widget.html' %}
+
+<!-- ================= SCRIPTS ================= -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Ensure rendering context is up top
+        const renderedCharts = {};
+        
+        // --- SIDEBAR HAMBURGER TOGGLE ---
+        const sidebar = document.getElementById('sidebar');
+        const sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+        sidebarCollapseBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // --- LIGHT/DARK THEME TOGGLE ---
+        const themeBtn = document.getElementById('themeToggleBtn');
+        const htmlElement = document.documentElement;
+        const icon = themeBtn.querySelector('i');
+        const text = themeBtn.querySelector('span');
+
+        const savedTheme = localStorage.getItem('ecogap-theme') || 'dark';
+        setTheme(savedTheme);
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        function setTheme(theme) {
+            htmlElement.setAttribute('data-theme', theme);
+            localStorage.setItem('ecogap-theme', theme);
+            
+            const closeBtns = document.querySelectorAll('.btn-close');
+            
+            if (theme === 'light') {
+                icon.className = 'fa-solid fa-sun text-warning';
+                if(text) text.textContent = 'Light Mode';
+                Chart.defaults.color = '#64748b'; 
+                closeBtns.forEach(btn => btn.classList.remove('btn-close-white'));
+            } else {
+                icon.className = 'fa-solid fa-moon';
+                if(text) text.textContent = 'Dark Mode';
+                Chart.defaults.color = '#94a3b8'; 
+                closeBtns.forEach(btn => btn.classList.add('btn-close-white'));
+            }
+            
+            for (let id in renderedCharts) { renderedCharts[id].update(); }
+        }
+
+        // --- BACK TO TOP BUTTON LOGIC ---
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // --- DYNAMIC DASHBOARD CHART GENERATION ---
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+        function initDashboardForPane(pane) {
+            const hook = pane.querySelector('[id^="data-hook-"]');
+            if (!hook) return;
+
+            const layerId = hook.id.replace('data-hook-', '');
+            if (renderedCharts[layerId]) return;
+
+            const statusNodes = hook.querySelectorAll('.finding-data');
+            const labels = [], scores = [], bgColors = [];
+
+            statusNodes.forEach(node => {
+                let item = node.getAttribute('data-item') || "Requirement";
+                if (item.length > 25) item = item.substring(0, 25) + '...';
+                labels.push(item);
+
+                let stat = (node.getAttribute('data-status') || "").toLowerCase();
+                if (stat.includes('unmet')) { scores.push(0); bgColors.push('#ef4444'); } 
+                else if (stat.includes('partially') || stat.includes('partial')) { scores.push(1); bgColors.push('#f59e0b'); } 
+                else { scores.push(2); bgColors.push('#10b981'); }
+            });
+
+            const canvasElement = document.getElementById(`layer-chart-${layerId}`);
+            if(canvasElement && labels.length > 0) {
+                const ctx = canvasElement.getContext('2d');
+                
+                let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(14, 165, 233, 0.4)');
+                gradient.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
+
+                renderedCharts[layerId] = new Chart(ctx, {
+                    type: 'line',
+                    data: { 
+                        labels: labels, 
+                        datasets: [{ 
+                            label: 'Status Score', 
+                            data: scores, 
+                            backgroundColor: gradient, 
+                            borderColor: '#0ea5e9',
+                            borderWidth: 3,
+                            pointBackgroundColor: bgColors,
+                            pointBorderColor: '#ffffff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            fill: true,
+                            tension: 0.4
+                        }] 
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { let v=c.raw; return v===0?' Unmet':v===1?' Partially Met':' Met'; } } } },
+                        scales: {
+                            y: { beginAtZero: true, max: 2.5, ticks: { stepSize: 1, callback: function(v) { return v===0?'Unmet':v===1?'Partial':v===2?'Met':''; } } },
+                            x: { ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+        }
+
+        const activePane = document.querySelector('.tab-pane.show.active');
+        if(activePane) initDashboardForPane(activePane);
+
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (event) {
+                const targetId = event.target.getAttribute('data-bs-target');
+                if(targetId) {
+                   const targetPane = document.querySelector(targetId);
+                   if(targetPane) initDashboardForPane(targetPane);
+                }
+            });
+        });
+
+        // --- MODALS LOGIC (DYNAMIC EXCEL/PIPE PARSER) ---
+        const scoringModal = document.getElementById('scoringModal');
+        if (scoringModal) {
+            scoringModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const itemTitle = button.getAttribute('data-item') || "";
+                let breakdownStr = button.getAttribute('data-breakdown') || "";
+                const finalStatus = button.getAttribute('data-status') || "Unmet";
+                const layerType = button.getAttribute('data-layertype') || "";
+
+                document.getElementById('scoreModalItemTitle').textContent = itemTitle;
+                
+                const finalStatusLower = finalStatus.toLowerCase();
+                const badge = document.getElementById('scoreModalFinalStatusBadge');
+                badge.textContent = finalStatus;
+                badge.className = 'badge fs-5 rounded-pill px-4 py-2 ';
+                if (finalStatusLower.includes('unmet')) badge.classList.add('bg-danger', 'text-white');
+                else if (finalStatusLower.includes('partial')) badge.classList.add('bg-warning', 'text-dark');
+                else badge.classList.add('bg-success', 'text-white');
+
+                const isGapPrioritization = layerType.includes('Gap Prioritization');
+                const isRiskAnalysis = layerType.includes('Risk Analysis');
+                const showCol4 = layerType.includes('Quality') || layerType.includes('Maturity') || isGapPrioritization;
+                
+                // Set Header 1
+                let header1Text = 'KEYWORD / ELEMENT';
+                if (isGapPrioritization) header1Text = 'REQUIREMENT / ITEM';
+                else if (showCol4 && !isGapPrioritization) header1Text = 'REPORTING PRINCIPLES';
+                else if (isRiskAnalysis) header1Text = 'ELEMENTS';
+                document.getElementById('scoreModalCol1').textContent = header1Text;
+                
+                if (isGapPrioritization) {
+                    // Hide Frequency and Presence completely for Gap Prioritization
+                    document.getElementById('scoreModalCol2').style.display = 'none';
+                    document.getElementById('scoreModalCol3').style.display = 'none';
+                    document.getElementById('scoreModalCol4').style.display = '';
+                    document.getElementById('scoreModalCol4').textContent = 'EVIDENCE MAPPING';
+                    document.getElementById('scoreModalCol1').style.width = '40%';
+                    document.getElementById('scoreModalCol4').style.width = '60%';
+                    
+                    const tfoot = document.querySelector('#scoreModalTableBody').parentElement.querySelector('tfoot');
+                    if (tfoot) tfoot.style.display = 'none';
+                } else {
+                    document.getElementById('scoreModalCol2').style.display = '';
+                    document.getElementById('scoreModalCol3').style.display = '';
+                    document.getElementById('scoreModalCol2').textContent = showCol4 ? 'SCORE' : 'FREQUENCY';
+                    document.getElementById('scoreModalTotalLabel').textContent = showCol4 ? 'Score' : 'Frequency';
+                    document.getElementById('scoreModalCol4').style.display = showCol4 ? '' : 'none';
+                    document.getElementById('scoreModalCol1').style.width = '35%';
+                    document.getElementById('scoreModalCol4').style.width = '35%';
+                    
+                    // Adjust footers for Quality vs Keywords
+                    const colspanVal = showCol4 ? 2 : 1;
+                    document.getElementById('scoreModalTfootEmpty1').colSpan = colspanVal;
+                    document.getElementById('scoreModalTfootEmpty2').colSpan = colspanVal;
+                    document.getElementById('scoreModalTfootEmpty3').colSpan = colspanVal;
+                    
+                    const tfoot = document.querySelector('#scoreModalTableBody').parentElement.querySelector('tfoot');
+                    if (tfoot) tfoot.style.display = '';
+                }
+
+                const tbody = document.getElementById('scoreModalTableBody');
+                tbody.innerHTML = '';
+                
+                let totalFreq = 0;
+                let totalPresence = 0;
+                let totalElements = 0;
+
+                let normalized = breakdownStr.replace(/\\n/g, '\n').replace(/<br\s*\/?>/gi, '\n');
+                let items = normalized.split('\n');
+
+                items.forEach(item => {
+                    let text = item.trim();
+                    if (!text) return;
+                    totalElements++;
+
+                    if (isGapPrioritization) {
+                        let parts = text.split('|');
+                        let name = parts[0] ? parts[0].trim() : '-';
+                        let evidence = parts.length > 1 ? parts.slice(1).join('|').trim() : '-';
+                        
+                        // Dynamically append the page number if partially met
+                        const isPartiallyMet = finalStatusLower.includes('partial');
+                        const pageNumStr = button.getAttribute('data-page');
+                        const pageText = (pageNumStr && pageNumStr !== 'None' && pageNumStr !== '-' && pageNumStr !== 'N/A') ? ` (Page: ${pageNumStr})` : '';
+
+                        if (isPartiallyMet && pageText && !evidence.includes('Page:')) {
+                            evidence = evidence === '-' ? pageText.trim() : evidence + pageText;
+                        }
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="text-theme-main fw-normal border-theme py-2 ps-3">${name}</td>
+                            <td class="text-theme-muted small border-theme py-2 pe-3">${evidence}</td>
+                        `;
+                        tbody.appendChild(tr);
+
+                    } else if (text.includes('|')) {
+                        let parts = text.split('|');
+                        let name = parts[0].trim();
+                        let freqOrScore = parseInt(parts[1], 10) || 0;
+                        let presence = parseInt(parts[2], 10) || 0;
+                        let evidence = parts.length > 3 ? parts.slice(3).join('|').trim() : '-';
+                        
+                        const isPartiallyMet = finalStatusLower.includes('partial');
+                        const pageNumStr = button.getAttribute('data-page');
+                        const pageText = (pageNumStr && pageNumStr !== 'None' && pageNumStr !== '-' && pageNumStr !== 'N/A') ? ` (Page: ${pageNumStr})` : '';
+
+                        if (isPartiallyMet && pageText && !evidence.includes('Page:')) {
+                            evidence = evidence === '-' ? pageText.trim() : evidence + pageText;
+                        }
+                        
+                        let col4Html = showCol4 ? `<td class="text-theme-muted small border-theme py-2 pe-3">${evidence}</td>` : '';
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="text-theme-main fw-normal border-theme py-2 ps-3">${name}</td>
+                            <td class="text-center text-theme-main fw-bold fs-6 border-theme py-2">${freqOrScore}</td>
+                            <td class="text-center border-theme py-2">
+                                <span class="badge ${presence > 0 ? 'bg-success' : 'bg-danger'} bg-opacity-10 ${presence > 0 ? 'text-success' : 'text-danger'} rounded-pill px-2 py-1">${presence}</span>
+                            </td>
+                            ${col4Html}
+                        `;
+                        tbody.appendChild(tr);
+
+                    } else {
+                        // LEGACY FORMAT FALLBACK
+                        text = text.replace(/^[\d\.\-\*]+\s*/, '').replace(/Keywords? checked:?\s*/i, '');
+                        const match = text.match(/^(.*?)(?:[:\-=\s]+)(\d+)\s*$/);
+                        let name = text; let freqOrScore = 0;
+                        if (match) { name = match[1].trim(); freqOrScore = parseInt(match[2], 10); }
+                        else { name = text.replace(/[:\d]/g, '').trim(); const numOnly = text.match(/\d+/); freqOrScore = numOnly ? parseInt(numOnly[0], 10) : 0; }
+
+                        if (name) {
+                            let presence = freqOrScore > 0 ? 1 : 0;
+                            totalFreq += freqOrScore;
+                            totalPresence += presence;
+                            
+                            let col4Html = showCol4 ? `<td class="text-theme-muted small border-theme py-2 pe-3">-</td>` : '';
+
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td class="text-theme-main fw-normal border-theme py-2 ps-3">${name}</td>
+                                <td class="text-center text-theme-main fw-bold fs-6 border-theme py-2">${freqOrScore}</td>
+                                <td class="text-center border-theme py-2">
+                                    <span class="badge ${presence > 0 ? 'bg-success' : 'bg-danger'} bg-opacity-10 ${presence > 0 ? 'text-success' : 'text-danger'} rounded-pill px-2 py-1">${presence}</span>
+                                </td>
+                                ${col4Html}
+                            `;
+                            tbody.appendChild(tr);
+                        }
+                    }
+                });
+
+                if (tbody.innerHTML === '') {
+                    tbody.innerHTML = `<tr><td colspan="${isGapPrioritization ? 2 : (showCol4 ? 4 : 3)}" class="text-center text-theme-muted py-4">No specific details provided by AI.</td></tr>`;
+                }
+
+                // Calculate Footers only if not Gap Prioritization
+                if (!isGapPrioritization) {
+                    let coveragePct = totalElements > 0 ? ((totalPresence / totalElements) * 100).toFixed(1) : 0;
+                    document.getElementById('scoreModalTotalFreq').textContent = totalFreq;
+                    document.getElementById('scoreModalTotalPresence').textContent = totalPresence;
+                    document.getElementById('scoreModalCoveragePct').textContent = coveragePct + '%';
+                }
+            });
+        }
+
+        const evidenceModal = document.getElementById('evidenceModal');
+        if (evidenceModal) {
+            evidenceModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                document.getElementById('evidenceModalItemTitle').textContent = button.getAttribute('data-item');
+                document.getElementById('evidenceModalStatusBadge').textContent = button.getAttribute('data-status');
+                
+                const pageNum = button.getAttribute('data-page');
+                document.getElementById('modalPageNumber').textContent = (pageNum && pageNum !== 'None' && pageNum !== '-') ? "Page " + pageNum : "N/A";
+                
+                document.getElementById('modalSectionName').textContent = button.getAttribute('data-section') ? button.getAttribute('data-section') : "Unknown Section";
+                document.getElementById('modalRawExcerpt').textContent = button.getAttribute('data-excerpt') ? `"${button.getAttribute('data-excerpt')}"` : '"Evidence missing."';
+                document.getElementById('modalDetailsText').textContent = button.getAttribute('data-details') ? button.getAttribute('data-details') : "No specific reasoning provided.";
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
